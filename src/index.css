@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Calibri', sans-serif;
+  background-color: #e2e8f0; /* slate-200 */
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2' stroke='%2394a3b8' stroke-opacity='0.4' stroke-width='0.5'/%3E%3C/svg%3E");
+}

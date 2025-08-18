@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<svg version="1.2" baseProfile="tiny" width="210mm" height="297mm" viewBox="0 0 21000 29700" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve">
+ <g visibility="visible" id="MasterSlide_1_Обычный">
+  <desc>Master slide
+  </desc>
+  <rect fill="none" stroke="none" x="0" y="0" width="21000" height="29700"/>
+ </g>
+ <g visibility="visible" id="Slide_1_page1">
+  <g id="DrawingGroup_1">
+   <g>
+    <path fill="rgb(0,0,0)" stroke="none" d="M 3744,4077 L 3616,3600 4093,3727 3884,3797 C 4028,3951 4100,4126 4100,4322 4100,4527 4028,4702 3884,4846 3739,4991 3564,5063 3359,5063 3155,5063 2981,4991 2836,4846 2691,4702 2618,4527 2618,4323 2618,4126 2691,3951 2836,3797 L 2905,3867 C 2780,4000 2717,4152 2717,4322 2717,4500 2780,4651 2905,4776 3030,4901 3181,4964 3359,4964 3536,4964 3687,4901 3813,4776 3938,4651 4001,4500 4001,4324 4001,4198 3967,4082 3900,3975 3853,3901 3824,3865 3814,3867 L 3744,4077 Z"/>
+    <rect fill="none" stroke="none" x="2618" y="3599" width="1484" height="1466"/>
+   </g>
+   <g>
+    <path fill="rgb(0,0,0)" stroke="none" d="M 2861,3006 C 2994,2884 3095,2778 3165,2689 3234,2600 3286,2516 3320,2437 L 3383,2437 C 3426,2528 3482,2616 3550,2702 3619,2787 3719,2889 3852,3007 L 3852,3114 C 3667,3027 3525,2937 3426,2842 L 3426,4873 3287,4873 3287,2842 C 3198,2912 3133,2961 3089,2988 3045,3016 2969,3057 2861,3111 L 2861,3006 Z"/>
+    <rect fill="none" stroke="none" x="2860" y="2436" width="993" height="2439"/>
+   </g>
+   <g>
+    <path fill="rgb(0,0,0)" stroke="none" d="M 3279,6063 C 3279,5769 3279,5475 3279,5181 3329,5181 3378,5181 3428,5181 3428,5475 3428,5769 3428,6063 3378,6063 3329,6063 3279,6063 Z"/>
+    <rect fill="none" stroke="none" x="3279" y="5181" width="150" height="883"/>
+   </g>
+  </g>
+ </g>
+</svg>
