@@ -419,13 +419,13 @@ const App: React.FC = () => {
   return (
     <div className={appContainerClass}>
       {!isSchemeDrawing && (
-        <header className="w-full p-2 sm:p-4 bg-white/80 backdrop-blur-sm sticky top-0 z-30 border-b border-slate-200 flex justify-between items-center">
+        <header className="w-full p-2 sm:p-4 bg-white/80 backdrop-blur-sm sticky top-0 z-30 border-b border-slate-200 flex justify-between items-center shadow-md shadow-slate-900/40">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
                 Расчет многоступенчатых трансмиссий
             </h1>
             <div className="flex space-x-2 ml-4">
-                <Button onClick={() => openInfoModal('workbench')} variant="secondary" title="Справка" className="!px-3 !py-2"><InfoIcon /></Button>
-                <Button onClick={() => setIsProjectActionsModalOpen(true)} variant="secondary" title="Проект и Экспорт" className="!px-3 !py-2"><FolderIcon /></Button>
+                <Button onClick={() => openInfoModal('workbench')} variant="secondary" title="Справка" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><InfoIcon /></Button>
+                <Button onClick={() => setIsProjectActionsModalOpen(true)} variant="secondary" title="Проект и Экспорт" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><FolderIcon /></Button>
             </div>
         </header>
       )}
@@ -504,8 +504,7 @@ const App: React.FC = () => {
       {!isSchemeDrawing && (
         <footer className="w-full px-4 sm:px-6 lg:px-8 mt-8 py-6 text-center text-gray-500 text-sm border-t border-slate-200">
           <p>&copy; {new Date().getFullYear()} Мастер Трансмиссий. Все права защищены.</p>
-          <p className="mt-1">Используемые стандарты: ГОСТ 2.703-2011, ГОСТ 2.770-68</p>
-        </footer>
+          </footer>
       )}
     </div>
   );

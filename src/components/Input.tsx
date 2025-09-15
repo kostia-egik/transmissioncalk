@@ -13,6 +13,8 @@ interface InputProps {
   labelClassName?: string;
   inputClassName?: string;
   error?: string;
+  warning?: string;
+  isSuccess?: boolean;
   required?: boolean;
   min?: number;
   max?: number;
@@ -36,6 +38,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
   labelClassName = 'block text-sm font-medium text-gray-700 mb-1',
   inputClassName = 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm',
   error,
+  warning,
+  isSuccess,
   required,
   min,
   max,
@@ -68,6 +72,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
       onChange(e);
     }
   };
+  
+  const borderClass = error 
+    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+    : warning 
+    ? 'border-amber-500 focus:ring-amber-500 focus:border-amber-500' 
+    : isSuccess 
+    ? 'border-green-500 focus:ring-green-500 focus:border-green-500' 
+    : '';
 
   return (
     <div className={`mb-4 ${className}`}>
@@ -81,16 +93,17 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
         onChange={handleOnChange}
         onBlur={onBlur}
         placeholder={placeholder}
-        className={`${inputClassName} ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''} ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${readOnly ? 'bg-gray-100' : 'bg-gray-50'}`}
+        className={`${inputClassName} ${borderClass} transition-colors duration-300 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${readOnly ? 'bg-gray-100' : 'bg-gray-50'}`}
         required={required}
         min={type === 'number' ? min : undefined}
         max={type === 'number' ? max : undefined}
         step={type === 'number' ? step : undefined}
         disabled={disabled}
         readOnly={readOnly}
-        title={title}
+        title={error || warning || title}
       />
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-600 font-semibold">{error}</p>}
+      {!error && warning && <p className="mt-1 text-xs text-amber-700 font-semibold">{warning}</p>}
     </div>
   );
 });

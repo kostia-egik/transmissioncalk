@@ -18,6 +18,7 @@ interface InputWithControlsProps {
   label: string;
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onIncrement: () => void;
   onDecrement: () => void;
   onLabelClick?: (target: HTMLElement) => void;
@@ -25,6 +26,9 @@ interface InputWithControlsProps {
   step?: number;
   className?: string;
   inputClassName?: string;
+  error?: string;
+  warning?: string;
+  isSuccess?: boolean;
 }
 
 const InputWithControls: React.FC<InputWithControlsProps> = ({
@@ -33,13 +37,17 @@ const InputWithControls: React.FC<InputWithControlsProps> = ({
   label,
   value,
   onChange,
+  onBlur,
   onIncrement,
   onDecrement,
   onLabelClick,
   min = 0,
   step = 1,
   className = '',
-  inputClassName = ''
+  inputClassName = '',
+  error,
+  warning,
+  isSuccess,
 }) => {
   const repeatingTimeoutRef = useRef<number | null>(null);
   const initialPressTimeoutRef = useRef<number | null>(null);
@@ -63,7 +71,6 @@ const InputWithControls: React.FC<InputWithControlsProps> = ({
     let stepCount = 0;
 
     const changeAndSchedule = () => {
-      // Use ref to get the live value from the DOM to avoid stale state in closure
       if (action === 'decrement' && inputRef.current) {
         const currentValue = Number(inputRef.current.value);
         if (currentValue <= min) {
@@ -107,11 +114,13 @@ const InputWithControls: React.FC<InputWithControlsProps> = ({
 
   const handleInteractionEnd = () => {
     stopChangingValue();
-    // Use a timeout to reset the flag, allowing any lingering synthetic mouse events to be ignored.
     setTimeout(() => {
       isTouchHandled.current = false;
     }, 50);
   };
+  
+  const borderColorClass = error ? 'border-red-400' : warning ? 'border-amber-400' : isSuccess ? 'border-green-400' : 'border-gray-300';
+  const focusRingClass = error ? 'focus:ring-red-500 focus:border-red-500' : warning ? 'focus:ring-amber-500 focus:border-amber-500' : isSuccess ? 'focus:ring-green-500 focus:border-green-500' : 'focus:ring-indigo-500 focus:border-indigo-500';
 
   return (
     <div className={`mb-1 ${className}`}>
@@ -132,7 +141,7 @@ const InputWithControls: React.FC<InputWithControlsProps> = ({
                 onTouchEnd={handleInteractionEnd}
                 onTouchCancel={handleInteractionEnd}
                 disabled={Number(value) <= min}
-                className="h-9 px-1.5 text-sm leading-none rounded-l-md border border-r-0 border-gray-300 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className={`h-9 px-1.5 text-sm leading-none rounded-l-md border border-r-0 transition-colors duration-300 ${borderColorClass} bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed flex items-center justify-center`}
                 title={`Уменьшить`}
             >
                 <MinusIcon />
@@ -144,9 +153,11 @@ const InputWithControls: React.FC<InputWithControlsProps> = ({
                 type="number"
                 value={value}
                 onChange={onChange}
+                onBlur={onBlur}
                 min={min}
                 step={step}
-                className={`h-9 w-full text-center rounded-none !mt-0 border-t border-b border-gray-300 bg-gray-50 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm ${inputClassName}`}
+                title={error || warning}
+                className={`h-9 w-full text-center rounded-none !mt-0 border-t border-b transition-colors duration-300 ${borderColorClass} bg-gray-50 shadow-sm focus:outline-none focus:ring-1 ${focusRingClass} text-sm ${inputClassName}`}
             />
             <button
                 type="button"
@@ -156,12 +167,14 @@ const InputWithControls: React.FC<InputWithControlsProps> = ({
                 onTouchStart={(e) => handleTouchStartWrapper(e, 'increment')}
                 onTouchEnd={handleInteractionEnd}
                 onTouchCancel={handleInteractionEnd}
-                className="h-9 px-1.5 text-sm leading-none rounded-r-md border border-l-0 border-gray-300 bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
+                className={`h-9 px-1.5 text-sm leading-none rounded-r-md border border-l-0 transition-colors duration-300 ${borderColorClass} bg-gray-100 hover:bg-gray-200 flex items-center justify-center`}
                 title={`Увеличить`}
             >
                 <PlusIcon />
             </button>
         </div>
+        {error && <p className="mt-1 text-xs text-red-600 font-semibold">{error}</p>}
+        {!error && warning && <p className="mt-1 text-xs text-amber-700 font-semibold">{warning}</p>}
     </div>
   );
 };

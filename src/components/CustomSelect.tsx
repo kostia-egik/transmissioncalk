@@ -27,6 +27,9 @@ interface CustomSelectProps<T extends string | number> {
   selectClassName?: string;
   emptyOptionLabel?: string;
   disabled?: boolean;
+  error?: string;
+  warning?: string;
+  isSuccess?: boolean;
 }
 
 const PreviewPopup: React.FC<{ content: React.ReactNode; position: { top: number; left: number } }> = ({ content, position }) => {
@@ -60,6 +63,9 @@ export const CustomSelect = <T extends string | number>({
   selectClassName = '',
   emptyOptionLabel = '-- Выбрать --',
   disabled = false,
+  error,
+  warning,
+  isSuccess,
 }: CustomSelectProps<T>): React.ReactElement => {
     const [isOpen, setIsOpen] = useState(false);
     const [preview, setPreview] = useState<React.ReactNode | null>(null);
@@ -93,17 +99,14 @@ export const CustomSelect = <T extends string | number>({
     const handleOptionClick = (optionValue: T) => {
         if (isTouchDevice) {
             if (preselectedValue === optionValue) {
-                // Second tap: confirm selection
                 handleSelect(optionValue);
                 setPreselectedValue(null);
             } else {
-                // First tap: pre-select and show preview
                 setPreselectedValue(optionValue);
                 const option = options.find(opt => opt.value === optionValue);
                 setPreview(option?.previewComponent ?? null);
             }
         } else {
-            // Desktop click
             handleSelect(optionValue);
         }
     };
@@ -134,7 +137,7 @@ export const CustomSelect = <T extends string | number>({
             }
 
             if (preview) {
-                const popupWidth = 100 + 16; // 100px UGO + 16px padding
+                const popupWidth = 100 + 16;
                 let popupLeft = rect.right + 10;
                 let popupTop = rect.top;
                 
@@ -168,8 +171,11 @@ export const CustomSelect = <T extends string | number>({
     const selectedLabel = options.find(opt => opt.value === value)?.label || emptyOptionLabel;
     const portalRoot = document.getElementById('root');
 
+    const ringColorClass = error ? 'ring-red-500' : warning ? 'ring-amber-500' : isSuccess ? 'ring-green-500' : 'ring-gray-300';
+    const focusRingClass = error ? 'focus:ring-red-500' : warning ? 'focus:ring-amber-500' : isSuccess ? 'focus:ring-green-500' : 'focus:ring-indigo-500';
+
     return (
-        <div className={`relative ${className}`} ref={containerRef}>
+        <div className={`relative ${className}`}>
             {label && <label htmlFor={id} className={`${labelClassName} ${onLabelClick ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''}`} onClick={onLabelClick ? (e) => onLabelClick(e.currentTarget) : undefined}>{label}</label>}
             <button
                 ref={triggerRef}
@@ -178,7 +184,7 @@ export const CustomSelect = <T extends string | number>({
                 type="button"
                 onClick={handleToggle}
                 disabled={disabled}
-                className={`mt-1 relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6 ${selectClassName} ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`mt-1 relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ${ringColorClass} focus:outline-none focus:ring-2 ${focusRingClass} sm:text-sm sm:leading-6 transition-shadow duration-300 ${selectClassName} ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
             >
@@ -187,6 +193,8 @@ export const CustomSelect = <T extends string | number>({
                     <ChevronDownIcon />
                 </span>
             </button>
+            {error && <p className="mt-1 text-xs text-red-600 font-semibold">{error}</p>}
+            {!error && warning && <p className="mt-1 text-xs text-amber-700 font-semibold">{warning}</p>}
 
             {isOpen && portalRoot && ReactDOM.createPortal(
                 <ul

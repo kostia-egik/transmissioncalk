@@ -122,14 +122,14 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose}></div>
       <div
         ref={menuRef}
-        className={`fixed bg-white rounded-xl shadow-2xl z-50 border border-gray-200 ${isMobileView ? mobileClasses : desktopClasses}`}
+        className={`fixed bg-white rounded-xl shadow-2xl shadow-slate-900/95 z-50 border border-gray-200 ${isMobileView ? mobileClasses : desktopClasses}`}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-          <div className="flex items-center space-x-2">
+        <div className="flex justify-between items-center p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg shadow-md shadow-slate-900/10">
+          <div className="flex items-center space-x-2 ">
             <button onClick={() => onNavigate('prev')} title="Предыдущий (←)" className="p-1 rounded-full hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
@@ -184,12 +184,12 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
             <h4 className="text-xs font-bold uppercase text-gray-400 mb-2">Управление схемой</h4>
             <div className="space-y-2">
               {isMultiModuleStage && !isCurrentActive && onMakeActive && (
-                  <Button onClick={onMakeActive} variant="primary" className="!w-full !px-2 !py-1.5 text-sm">
+                  <Button onClick={onMakeActive} variant="primary" className="!w-full !px-2 !py-1.5 text-sm shadow-md shadow-slate-900/40">
                       Сделать ведущим
                   </Button>
               )}
                {onGoToWorkbench && (
-                <Button onClick={onGoToWorkbench} variant="secondary" className="!w-full !px-2 !py-1.5 text-sm flex items-center justify-center space-x-2">
+                <Button onClick={onGoToWorkbench} variant="secondary" className="!w-full !px-2 !py-1.5 text-sm flex items-center justify-center space-x-2 shadow-md shadow-slate-900/40">
                     <span>К параметрам</span>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </Button>
@@ -216,7 +216,7 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
                           <Button 
                             onClick={() => onUpdateReversed(inputDirection === 'left' ? false : true)} 
                             variant={(inputDirection === 'left' ? !isReversed : isReversed) ? 'primary' : 'secondary'} 
-                            className="!px-2 !py-1 text-xs"
+                            className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40"
                           >
                             ← Влево
                           </Button>
@@ -224,7 +224,7 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
                           <Button 
                             onClick={() => onUpdateReversed(inputDirection === 'right' ? false : true)} 
                             variant={(inputDirection === 'right' ? !isReversed : isReversed) ? 'primary' : 'secondary'} 
-                            className="!px-2 !py-1 text-xs"
+                            className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40"
                           >
                             Вправо →
                           </Button>
@@ -235,7 +235,7 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
                           <Button 
                             onClick={() => onUpdateReversed(inputDirection === 'up' ? false : true)} 
                             variant={(inputDirection === 'up' ? !isReversed : isReversed) ? 'primary' : 'secondary'} 
-                            className="!px-2 !py-1 text-xs"
+                            className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40"
                           >
                             ↑ Вверх
                           </Button>
@@ -243,7 +243,7 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
                           <Button 
                             onClick={() => onUpdateReversed(inputDirection === 'down' ? false : true)} 
                             variant={(inputDirection === 'down' ? !isReversed : isReversed) ? 'primary' : 'secondary'} 
-                            className="!px-2 !py-1 text-xs"
+                            className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40"
                           >
                             Вниз ↓
                           </Button>
@@ -258,14 +258,14 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
                   <div className="grid grid-cols-2 gap-1.5">
                       {isVerticalInput && (
                         <>
-                          <Button onClick={() => onUpdateTurnDirection('left')} variant={currentTurnDirection === 'left' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs">← Влево</Button>
-                          <Button onClick={() => onUpdateTurnDirection('right')} variant={currentTurnDirection === 'right' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs">Вправо →</Button>
+                          <Button onClick={() => onUpdateTurnDirection('left')} variant={currentTurnDirection === 'left' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40">← Влево</Button>
+                          <Button onClick={() => onUpdateTurnDirection('right')} variant={currentTurnDirection === 'right' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40">Вправо →</Button>
                         </>
                       )}
                       {isHorizontalInput && (
                         <>
-                          <Button onClick={() => onUpdateTurnDirection('up')} variant={currentTurnDirection === 'up' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs">↑ Вверх</Button>
-                          <Button onClick={() => onUpdateTurnDirection('down')} variant={currentTurnDirection === 'down' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs">Вниз ↓</Button>
+                          <Button onClick={() => onUpdateTurnDirection('up')} variant={currentTurnDirection === 'up' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40">↑ Вверх</Button>
+                          <Button onClick={() => onUpdateTurnDirection('down')} variant={currentTurnDirection === 'down' ? 'primary' : 'secondary'} className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40">Вниз ↓</Button>
                         </>
                       )}
                   </div>
@@ -275,14 +275,14 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
                 <div>
                     <p className="text-sm text-gray-600 mb-1.5 pt-2 border-t mt-2">Вал-проставка:</p>
                     <div className="grid grid-cols-2 gap-1.5">
-                        <Button onClick={() => onAddSpacer('before')} variant="secondary" className="!px-2 !py-1 text-xs">Добавить До</Button>
-                        <Button onClick={() => onAddSpacer('after')} variant="secondary" className="!px-2 !py-1 text-xs">Добавить После</Button>
+                        <Button onClick={() => onAddSpacer('before')} variant="secondary" className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40">Добавить До</Button>
+                        <Button onClick={() => onAddSpacer('after')} variant="secondary" className="!px-2 !py-1 text-xs shadow-md shadow-slate-900/40">Добавить После</Button>
                     </div>
                 </div>
               ) : (
                 <div>
                     <p className="text-sm text-gray-600 mb-1.5 pt-2 border-t mt-2">Вал-проставка:</p>
-                    <Button onClick={() => onAddSpacer('after')} variant="secondary" className="w-full !px-2 !py-1 text-xs">Добавить После</Button>
+                    <Button onClick={() => onAddSpacer('after')} variant="secondary" className="w-full !px-2 !py-1 text-xs shadow-md shadow-slate-900/40">Добавить После</Button>
                 </div>
               )}
             </div>

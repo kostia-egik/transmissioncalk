@@ -224,6 +224,7 @@ export interface ModuleCalculationData {
     da2?: number;
     df1?: number;
     df2?: number;
+    epsilonAlpha?: number;
     // Chain
     chain_d1?: number;
     chain_d2?: number;
@@ -238,6 +239,8 @@ export interface ModuleCalculationData {
     planetary_dPlanet?: number;
     planetary_dRing?: number;
     planetary_a?: number;
+    epsilon_sp?: number;
+    epsilon_pr?: number;
     // Toothed Belt
     tb_d1?: number;
     tb_d2?: number;
@@ -254,6 +257,7 @@ export interface ModuleCalculationData {
     bevel_Re?: number;
     bevel_dm1?: number;
     bevel_dm2?: number;
+    bevel_epsilonAlpha?: number;
     // Worm
     worm_a?: number;
     worm_d1?: number;
@@ -271,6 +275,10 @@ export interface ModuleCalculationData {
     moduleOutOrientation?: ShaftOrientation;
     error?: string;
     assemblyError?: string;
+    validationState?: {
+        errors?: Record<string, string>;
+        warnings?: Record<string, string>;
+    };
 }
 
 export interface StageCalculationData {
@@ -292,8 +300,10 @@ export interface FinalCalculationResults {
 
 export interface CalculationOutput {
     u: number;
-    error?: string;
-    assemblyError?: string;
+    validationState?: {
+        errors?: Record<string, string>;
+        warnings?: Record<string, string>;
+    };
     // Cylindrical
     a?: number;
     d1?: number;
@@ -302,6 +312,7 @@ export interface CalculationOutput {
     da2?: number;
     df1?: number;
     df2?: number;
+    epsilonAlpha?: number;
     // Chain
     chain_d1?: number;
     chain_d2?: number;
@@ -316,6 +327,8 @@ export interface CalculationOutput {
     planetary_dPlanet?: number;
     planetary_dRing?: number;
     planetary_a?: number;
+    epsilon_sp?: number;
+    epsilon_pr?: number;
     // Toothed Belt
     tb_d1?: number;
     tb_d2?: number;
@@ -332,6 +345,7 @@ export interface CalculationOutput {
     bevel_Re?: number;
     bevel_dm1?: number;
     bevel_dm2?: number;
+    bevel_epsilonAlpha?: number;
     // Worm
     worm_a?: number;
     worm_d1?: number;

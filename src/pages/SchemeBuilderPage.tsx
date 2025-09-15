@@ -182,6 +182,10 @@ const SpacerContextMenu: React.FC<SpacerContextMenuProps> = ({ spacer, position,
     const menuRef = useRef<HTMLDivElement>(null);
     const [length, setLength] = useState(spacer.length);
   
+    useEffect(() => {
+        setLength(spacer.length);
+    }, [spacer.length]);
+
     useLayoutEffect(() => {
         if (isMobileView || !menuRef.current) return;
 
@@ -440,7 +444,14 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
     };
     
     const handleUpdateSpacer = (index: number, newProps: Partial<SpacerShaft>) => {
-        const newData = [...schemeElements]; const spacerToUpdate = newData[index]; if (spacerToUpdate && 'type' in spacerToUpdate && spacerToUpdate.type === 'spacer') { newData[index] = { ...spacerToUpdate, ...newProps }; } setSchemeElements(newData);
+        const newData = [...schemeElements];
+        const spacerToUpdate = newData[index];
+        if (spacerToUpdate && 'type' in spacerToUpdate && spacerToUpdate.type === 'spacer') {
+            const updatedSpacer = { ...spacerToUpdate, ...newProps };
+            newData[index] = updatedSpacer;
+            setSchemeElements(newData);
+            setSelectedSpacer(prev => (prev && prev.index === index ? { ...prev, ...newProps } : prev));
+        }
     };
     
     const handleDeleteSpacer = (index: number) => { setSchemeElements(schemeElements.filter((_, i) => i !== index)); handleCloseMenus(); };
@@ -466,7 +477,19 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
         const powerSourceHandlers = createInteractionHandlers((e) => handleUgoInteraction(powerSourceInteractionData, e));
         const isPowerSourceSelected = selectedUgo?.module.id === powerSourceModuleData.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === 'power-source');
         const isPowerSourceOverlapping = overlappingUgoIds.has('power-source');
-        svgElements.push( <g key="engine-source" transform={`translate(${cursor.x}, ${powerSourceY})`} {...powerSourceHandlers} style={{ cursor: 'pointer' }}> {isPowerSourceSelected && <rect x={-5} y={-5} width={powerSourceWidth + 10} height={powerSourceHeight + 10} fill="rgba(59, 130, 246, 0.2)" stroke="rgba(59, 130, 246, 0.7)" strokeWidth="2" rx="5" />} {isPowerSourceOverlapping && <rect x={-5} y={-5} width={powerSourceWidth + 10} height={powerSourceHeight + 10} fill="rgba(239, 68, 68, 0.2)" stroke="rgba(220, 38, 38, 0.7)" strokeWidth="2" rx="5" />} <rect x="0" y="0" width={powerSourceWidth} height={powerSourceHeight} fill="transparent" /> <PowerSourceUGO width={powerSourceWidth} height={powerSourceHeight} direction={PowerSourceDirection.Right} /> </g> );
+        svgElements.push(
+            <g
+                key="engine-source"
+                transform={`translate(${cursor.x}, ${powerSourceY})`}
+                {...powerSourceHandlers}
+                style={{ cursor: 'pointer' }}
+                filter={isPowerSourceOverlapping ? "url(#overlap-glow)" : undefined}
+            >
+                {isPowerSourceSelected && <rect x="-10" y="-10" width={powerSourceWidth + 20} height={powerSourceHeight + 20} fill="url(#radial-glow-gradient)" style={{ pointerEvents: 'none' }} />}
+                <rect x="0" y="0" width={powerSourceWidth} height={powerSourceHeight} fill="transparent" />
+                <PowerSourceUGO width={powerSourceWidth} height={powerSourceHeight} direction={PowerSourceDirection.Right} />
+            </g>
+        );
         const powerSourceTransform: UgoTransform = { translateX: cursor.x, translateY: powerSourceY, rotation: 0, internalOffsetY: 0, rotationCenterX: powerSourceWidth/2, rotationCenterY: powerSourceHeight/2, width: powerSourceWidth, height: powerSourceHeight, scaleX: 1, scaleY: 1 };
         getUgoSubBboxes('Источник', {}).map(sub => transformLocalBboxToGlobal(sub, powerSourceTransform)).forEach(globalSub => baseLayoutOccupiedSpaces.push({ ...globalSub, ownerId: 'power-source' }));
         updateBounds({ x: cursor.x, y: powerSourceY, width: powerSourceWidth, height: powerSourceHeight });
@@ -480,6 +503,9 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                 const spacerElement = element; const isVertical = cursor.direction === 'up' || cursor.direction === 'down'; const orientation = isVertical ? 'vertical-shaft' : 'horizontal-shaft';
                 allTerminals.push({ id: `term-spacer-${spacerElement.id}-start`, point: { ...cursor }, orientation, isConnectionPoint: true });
                 const spacerStart = { ...cursor };
+                const isSpacerSelected = selectedSpacer?.id === spacerElement.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === spacerElement.id);
+                const spacerHandlers = createInteractionHandlers((e) => handleSpacerInteraction(e, { ...spacerElement, index: elementIndex }));
+                
                 if (spacerElement.style === 'cardan') {
                     const centralLength = spacerElement.length; const totalAssemblyWidth = JOINT_UGO_WIDTH * 2 + centralLength; const ugoTransform: UgoTransform = { translateX: 0, translateY: 0, rotation: 0, internalOffsetY: 0, rotationCenterX: totalAssemblyWidth / 2, rotationCenterY: CARDAN_UGO_HEIGHT / 2, width: totalAssemblyWidth, height: CARDAN_UGO_HEIGHT, scaleX: 1, scaleY: 1 }; let transformString = '';
                     if (isVertical) {
@@ -489,15 +515,43 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                         ugoTransform.translateX = (cursor.direction === 'right') ? cursor.x : cursor.x - totalAssemblyWidth; ugoTransform.translateY = cursor.y - CARDAN_UGO_HEIGHT / 2; transformString = `translate(${ugoTransform.translateX}, ${ugoTransform.translateY})`;
                         if (cursor.direction === 'right') cursor.x += totalAssemblyWidth; else cursor.x -= totalAssemblyWidth;
                     }
-                    const isSpacerSelected = selectedSpacer?.id === spacerElement.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === spacerElement.id);
-                    const spacerHandlers = createInteractionHandlers((e) => handleSpacerInteraction(e, { ...spacerElement, index: elementIndex }));
-                    svgElements.push( <g key={spacerElement.id} transform={transformString}> {isSpacerSelected && <rect x={-2} y={-2} width={totalAssemblyWidth + 4} height={CARDAN_UGO_HEIGHT + 4} fill="rgba(59, 130, 246, 0.2)" stroke="rgba(59, 130, 246, 0.7)" strokeWidth="1.5" rx="3" />} <CardanShaftUGO centralLength={centralLength} /> <rect x="0" y="0" width={totalAssemblyWidth} height={CARDAN_UGO_HEIGHT} fill="transparent" {...spacerHandlers} style={{ cursor: 'pointer' }} /> </g> );
+                    const glowWidth = totalAssemblyWidth + 20;
+                    const glowHeight = CARDAN_UGO_HEIGHT + 20;
+                    svgElements.push(
+                        <g
+                            key={spacerElement.id}
+                            transform={transformString}
+                        >
+                            {isSpacerSelected && <rect x="-10" y="-10" width={glowWidth} height={glowHeight} fill="url(#radial-glow-gradient)" style={{ pointerEvents: 'none' }} />}
+                            <CardanShaftUGO centralLength={centralLength} />
+                            <rect x="0" y="0" width={totalAssemblyWidth} height={CARDAN_UGO_HEIGHT} fill="transparent" {...spacerHandlers} style={{ cursor: 'pointer' }} />
+                        </g>
+                    );
                 } else {
                     if (cursor.direction === 'right') cursor.x += spacerElement.length; else if (cursor.direction === 'left') cursor.x -= spacerElement.length; else if (cursor.direction === 'down') cursor.y += spacerElement.length; else if (cursor.direction === 'up') cursor.y -= spacerElement.length;
                     const spacerEnd = { ...cursor };
-                    const isSpacerSelected = selectedSpacer?.id === spacerElement.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === spacerElement.id);
-                    const spacerHandlers = createInteractionHandlers((e) => handleSpacerInteraction(e, { ...spacerElement, index: elementIndex }));
-                    svgElements.push( <g key={spacerElement.id}> {isSpacerSelected && <line x1={spacerStart.x} y1={spacerStart.y} x2={spacerEnd.x} y2={spacerEnd.y} stroke="rgba(59, 130, 246, 0.7)" strokeWidth={8} strokeLinecap="round" />} <line x1={spacerStart.x} y1={spacerStart.y} x2={spacerEnd.x} y2={spacerEnd.y} stroke="#0F0F0F" strokeWidth={2} strokeDasharray={spacerElement.style === 'dashed' ? '5, 5' : 'none'} /> <line x1={spacerStart.x} y1={spacerStart.y} x2={spacerEnd.x} y2={spacerEnd.y} stroke="transparent" strokeWidth={20} {...spacerHandlers} style={{ cursor: 'pointer' }} /> </g> );
+                    const dx = spacerEnd.x - spacerStart.x;
+                    const dy = spacerEnd.y - spacerStart.y;
+                    const length = Math.hypot(dx, dy);
+                    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                    const glowHeight = 20;
+                    svgElements.push(
+                        <g key={spacerElement.id}>
+                            {isSpacerSelected && (
+                                <rect 
+                                    x="0" 
+                                    y={-glowHeight / 2} 
+                                    width={length} 
+                                    height={glowHeight} 
+                                    fill="url(#radial-glow-gradient)" 
+                                    transform={`translate(${spacerStart.x}, ${spacerStart.y}) rotate(${angle})`} 
+                                    style={{ pointerEvents: 'none' }}
+                                />
+                            )}
+                            <line x1={spacerStart.x} y1={spacerStart.y} x2={spacerEnd.x} y2={spacerEnd.y} stroke="#0F0F0F" strokeWidth={2} strokeDasharray={spacerElement.style === 'dashed' ? '5, 5' : 'none'} />
+                            <line x1={spacerStart.x} y1={spacerStart.y} x2={spacerEnd.x} y2={spacerEnd.y} stroke="transparent" strokeWidth={20} {...spacerHandlers} style={{ cursor: 'pointer' }} />
+                        </g>
+                    );
                 }
                 const spacerEnd = { ...cursor };
                 flatItems.push({ id: spacerElement.id, type: 'spacer', centerPoint: { x: (spacerStart.x + spacerEnd.x) / 2, y: (spacerStart.y + spacerEnd.y) / 2 }, data: { ...spacerElement, index: elementIndex } });
@@ -536,7 +590,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                         const interactionData = { module, stageIndex: elementIndex, inputDirection: flowDirection, currentTurn: stage.turn };
                         const handlers = createInteractionHandlers((e) => handleUgoInteraction(interactionData, e)); 
                         const isSelected = selectedUgo?.module.id === module.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === module.id); const isOverlapping = overlappingUgoIds.has(module.id);
-                        if(UgoComponent) svgElements.push(<g key={module.id} transform={transformString} {...handlers} style={{ cursor: 'pointer' }}> {isSelected && <rect x={-5} y={-5} width={width + 10} height={height + 10} fill="rgba(59, 130, 246, 0.2)" stroke="rgba(59, 130, 246, 0.7)" strokeWidth="2" rx="5" />} {isOverlapping && <rect x={-5} y={-5} width={width + 10} height={height + 10} fill="rgba(239, 68, 68, 0.2)" stroke="rgba(220, 38, 38, 0.7)" strokeWidth="2" rx="5" />} <rect x="0" y="0" width={width} height={height} fill="transparent" /> <UgoComponent width={width} height={height} {...ugoProps} strokeColor={strokeColor} /> </g>);
+                        if(UgoComponent) svgElements.push(<g key={module.id} transform={transformString} {...handlers} style={{ cursor: 'pointer' }} filter={isOverlapping ? "url(#overlap-glow)" : undefined}> {isSelected && <rect x="-10" y="-10" width={width + 20} height={height + 20} fill="url(#radial-glow-gradient)" style={{ pointerEvents: 'none' }} />} <rect x="0" y="0" width={width} height={height} fill="transparent" /> <UgoComponent width={width} height={height} {...ugoProps} strokeColor={strokeColor} /> </g>);
                         cursor.y += (cursor.direction === 'down' ? width : -width);
                     } else { // HORIZONTAL LOGIC
                         const inputShaftYOffset = (isLayoutInverted) ? UGO_PARALLEL_SHAFT_Y2 : UGO_PARALLEL_SHAFT_Y1;
@@ -552,7 +606,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                         const interactionData = { module, stageIndex: elementIndex, inputDirection: flowDirection, currentTurn: stage.turn };
                         const handlers = createInteractionHandlers((e) => handleUgoInteraction(interactionData, e));
                         const isSelected = selectedUgo?.module.id === module.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === module.id); const isOverlapping = overlappingUgoIds.has(module.id);
-                        if(UgoComponent) svgElements.push(<g key={module.id} transform={transformString} {...handlers} style={{ cursor: 'pointer' }}> {isSelected && <rect x={-5} y={-5} width={width + 10} height={height + 10} fill="rgba(59, 130, 246, 0.2)" stroke="rgba(59, 130, 246, 0.7)" strokeWidth="2" rx="5" />} {isOverlapping && <rect x={-5} y={-5} width={width + 10} height={height + 10} fill="rgba(239, 68, 68, 0.2)" stroke="rgba(220, 38, 38, 0.7)" strokeWidth="2" rx="5" />} <rect x="0" y="0" width={width} height={height} fill="transparent" /> <UgoComponent width={width} height={height} {...ugoProps} strokeColor={strokeColor} /> </g>);
+                        if(UgoComponent) svgElements.push(<g key={module.id} transform={transformString} {...handlers} style={{ cursor: 'pointer' }} filter={isOverlapping ? "url(#overlap-glow)" : undefined}> {isSelected && <rect x="-10" y="-10" width={width + 20} height={height + 20} fill="url(#radial-glow-gradient)" style={{ pointerEvents: 'none' }} />} <rect x="0" y="0" width={width} height={height} fill="transparent" /> <UgoComponent width={width} height={height} {...ugoProps} strokeColor={strokeColor} /> </g>);
                     }
                     updateBounds(ugoBbox);
                     getUgoSubBboxes(module.type, module.inputs).map(sub => transformLocalBboxToGlobal(sub, ugoTransform)).forEach(gSub => baseLayoutOccupiedSpaces.push({...gSub, ownerId: module.id}));
@@ -640,7 +694,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                     let isUgoMirrored=false;if(planetaryInputs.shaftConfig){switch(planetaryInputs.shaftConfig){case PlanetaryConfig.CarrierToSun:case PlanetaryConfig.RingToSun:case PlanetaryConfig.CarrierToRing:isUgoMirrored=true;break;}}ugoProps.mirrored=isUgoMirrored;
                 break; case GearType.Worm:UgoComponent=WormDriveUGO;ugoProps.config=inputs.config;ugoProps.cuttingDirection="right";break; case GearType.Bevel:UgoComponent=BevelGearUGO;ugoProps.config=inputs.config;break; }
                 const handlers = createInteractionHandlers((e) => handleUgoInteraction(interactionData, e)); const isSelected = selectedUgo?.module.id === module.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === module.id); const isOverlapping = overlappingUgoIds.has(module.id);
-                if(UgoComponent) svgElements.push( <g key={module.id} transform={transformString} {...handlers} style={{ cursor: 'pointer' }}> {isSelected && <rect x={-5} y={-5} width={ugoTransform.width + 10} height={ugoTransform.height + 10} fill="rgba(59, 130, 246, 0.2)" stroke="rgba(59, 130, 246, 0.7)" strokeWidth="2" rx="5" />} {isOverlapping && <rect x={-5} y={-5} width={ugoTransform.width + 10} height={ugoTransform.height + 10} fill="rgba(239, 68, 68, 0.2)" stroke="rgba(220, 38, 38, 0.7)" strokeWidth="2" rx="5" />} <rect x="0" y="0" width={ugoTransform.width} height={ugoTransform.height} fill="transparent" /> <UgoComponent width={ugoTransform.width} height={ugoTransform.height} {...ugoProps}/> </g> );
+                if(UgoComponent) svgElements.push( <g key={module.id} transform={transformString} {...handlers} style={{ cursor: 'pointer' }} filter={isOverlapping ? "url(#overlap-glow)" : undefined}> {isSelected && <rect x="-10" y="-10" width={ugoTransform.width + 20} height={ugoTransform.height + 20} fill="url(#radial-glow-gradient)" style={{ pointerEvents: 'none' }} />} <rect x="0" y="0" width={ugoTransform.width} height={ugoTransform.height} fill="transparent" /> <UgoComponent width={ugoTransform.width} height={ugoTransform.height} {...ugoProps}/> </g> );
             }
             if (isParallel) { previousParallelLayout = selectedModule.layout || ParallelLayoutType.Standard; } else { previousParallelLayout = null; }
             previousCursor = { ...cursor };
@@ -670,7 +724,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
     const bearingPlacements = new Map<string, { point: Point; orientation: 'horizontal-shaft' | 'vertical-shaft' }>();
     allTerminals.forEach(term => { if (!term.isConnectionPoint) { const key = `${Math.round(term.point.x)},${Math.round(term.point.y)}`; bearingPlacements.set(key, { point: term.point, orientation: term.orientation }); } }); const terminalGroups = new Map<string, Terminal[]>(); allTerminals.forEach(term => { if (term.isConnectionPoint) { const key = `${Math.round(term.point.x)},${Math.round(term.point.y)}`; if (!terminalGroups.has(key)) terminalGroups.set(key, []); terminalGroups.get(key)!.push(term); } }); terminalGroups.forEach((terminals, key) => { const stageOrSpacerTerminal = terminals.some(t => t.id.includes('term-stage-') || t.id.includes('term-spacer-')); if (terminals.length === 2 && stageOrSpacerTerminal) { bearingPlacements.set(key, { point: terminals[0].point, orientation: terminals[0].orientation }); } });
     const bearingElements = Array.from(bearingPlacements.entries()).map(([key, placement]) => { const isHorizontal = placement.orientation === 'horizontal-shaft'; const bearingWidth = isHorizontal ? BEARING_UGO_WIDTH : BEARING_UGO_HEIGHT; const bearingHeight = isHorizontal ? BEARING_UGO_HEIGHT : BEARING_UGO_WIDTH; const bearingX = placement.point.x - bearingWidth / 2; const bearingY = placement.point.y - bearingHeight / 2; const bearingBbox: Bbox = { x: bearingX, y: bearingY, width: bearingWidth, height: bearingHeight }; calloutOccupiedSpaces.push(bearingBbox);
-        return ( <g key={`bearing-${key}`} transform={`translate(${bearingX}, ${bearingY})`}> <BearingUGO width={bearingWidth} height={bearingHeight} orientation={placement.orientation} bgColor="white"/> </g> );
+        return ( <g key={`bearing-${key}`} transform={`translate(${bearingX}, ${bearingY})`}> <BearingUGO width={bearingWidth} height={bearingHeight} orientation={placement.orientation}/> </g> );
     });
     type CalloutCandidate = { path: string; textX: number; textY: number; textAnchor: 'start' | 'end'; penalty: number; penaltyBreakdown: Record<string, number>; textBbox: Bbox; elbowPoint: Point; anchorPoint: Point; };
     const calloutElements = ugoDataForCallouts.map((ugoData, ugoIndex) => {
@@ -735,7 +789,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
     
         setCurrentSelectedIndex(nextIndex);
         if (nextItem.type === 'spacer') {
-            setSelectedSpacer({ ...nextItem.data, index: nextIndex });
+            setSelectedSpacer({ ...nextItem.data });
             setSpacerMenuPosition({ x: menuX, y: menuY });
             setSelectedUgo(null);
             setMenuPosition(null);
@@ -801,6 +855,23 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                             xmlns="http://www.w3.org/2000/svg"
                         >
                             <defs>
+                                <radialGradient id="radial-glow-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                    <stop offset="0%" style={{stopColor: 'rgba(59, 130, 246, 0.7)', stopOpacity: 1}} />
+                                    <stop offset="100%" style={{stopColor: 'rgba(59, 130, 246, 0)', stopOpacity: 1}} />
+                                </radialGradient>
+                                <filter id="overlap-glow" x="-50%" y="-50%" width="200%" height="200%">
+                                  <feDropShadow dx="0" dy="0" stdDeviation="10" floodColor="#EF4444" floodOpacity="0.9">
+                                    <animate 
+                                        attributeName="stdDeviation" 
+                                        values="1;6;1" 
+                                        dur="1.5s" 
+                                        repeatCount="indefinite"
+                                        keyTimes="0;0.5;1"
+                                        calcMode="spline"
+                                        keySplines="0.42 0 0.58 1;0.42 0 0.58 1"
+                                    />
+                                  </feDropShadow>
+                                </filter>
                                 <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
                                     <polygon points="0 0, 6 2, 0 4" fill={CALLOUT_COLOR} />
                                 </marker>

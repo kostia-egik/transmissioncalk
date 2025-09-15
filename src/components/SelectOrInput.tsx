@@ -12,6 +12,9 @@ interface SelectOrInputProps {
   inputClassName?: string;
   selectClassName?: string;
   min?: number;
+  error?: string;
+  warning?: string;
+  isSuccess?: boolean;
 }
 
 const CUSTOM_VALUE = 'custom';
@@ -26,16 +29,16 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
   inputClassName = '',
   selectClassName = '',
   min,
+  error,
+  warning,
+  isSuccess,
 }) => {
   const customInputRef = useRef<HTMLInputElement>(null);
 
-  // State to control the visibility of the custom input field.
-  // Initial state calculation: show if value is present but not a standard option.
   const [showCustomInput, setShowCustomInput] = useState(() => 
     value !== '' && !options.includes(Number(value))
   );
 
-  // Effect to focus the custom input when it becomes visible.
   useEffect(() => {
     if (showCustomInput) {
       setTimeout(() => customInputRef.current?.focus(), 0);
@@ -46,7 +49,7 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
     const selectedValue = e.target.value;
     if (selectedValue === CUSTOM_VALUE) {
       setShowCustomInput(true);
-      onChange(''); // Clear value to prompt for new input.
+      onChange('');
     } else {
       setShowCustomInput(false);
       onChange(Number(selectedValue));
@@ -54,10 +57,8 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
   };
   
   const handleCustomInputBlur = () => {
-    // When the input loses focus, check if the entered value is a standard one.
     const numericValue = Number(value);
     if (value !== '' && options.includes(numericValue)) {
-      // If it is, hide the custom input. The select will update automatically.
       setShowCustomInput(false);
     }
   };
@@ -67,7 +68,6 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
     { value: CUSTOM_VALUE, label: 'свое значение' }
   ];
   
-  // If a custom value is active, the select should show the custom value label.
   const selectValue = showCustomInput ? CUSTOM_VALUE : String(value);
 
   return (
@@ -80,7 +80,10 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
         onLabelClick={onLabelClick}
         options={selectOptions}
         selectClassName={`bg-gray-50 ${selectClassName}`}
-        className="mb-0" // Override default margin of Select component wrapper
+        className="mb-0"
+        error={showCustomInput ? undefined : error}
+        warning={showCustomInput ? undefined : warning}
+        isSuccess={showCustomInput ? undefined : isSuccess}
       />
       {showCustomInput && (
         <Input
@@ -91,10 +94,13 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
           onChange={(e) => onChange(e.target.value)}
           onBlur={handleCustomInputBlur}
           placeholder="Введите значение"
-          inputClassName={`mt-2 bg-gray-50 ${inputClassName}`} // Add margin-top to separate from select
-          className="mb-0" // No margin on the Input wrapper itself
-          label="" // No label for the custom input field
+          inputClassName={`mt-2 bg-gray-50 ${inputClassName}`}
+          className="mb-0"
+          label=""
           min={min}
+          error={error}
+          warning={warning}
+          isSuccess={isSuccess}
         />
       )}
     </div>

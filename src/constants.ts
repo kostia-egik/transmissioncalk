@@ -31,6 +31,7 @@ export const ERROR_TEXT_COLOR = "text-red-700"; // Dark red text for error messa
 export const GEAR_MODULES: number[] = [0.5, 0.6, 0.8, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 32, 40, 50];
 export const CHAIN_PITCHES: number[] = [8.0, 9.525, 12.7, 15.875, 19.05, 25.4, 31.75, 38.1, 44.45, 50.8];
 export const TOOTHED_BELT_PITCHES: number[] = [2, 2.5, 3, 5, 8, 10, 14, 20];
+export const WORM_DIAMETER_COEFFICIENTS: number[] = [8, 10, 12.5, 16, 20, 25];
 
 // SVG Icon Definitions
 const ICON_ROTATION_CW_H_SVG = `<svg version="1.2" baseProfile="tiny" width="210mm" height="297mm" viewBox="6200 3170 3070 1185" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve">
@@ -54,7 +55,7 @@ const ICON_ROTATION_CW_H_SVG = `<svg version="1.2" baseProfile="tiny" width="210
    </g>
   </g>
  </g>
-</svg>`;
+</svg>`
 const ICON_ROTATION_CCW_H_SVG = `<svg version="1.2" baseProfile="tiny" width="210mm" height="297mm" viewBox="4260 3070 2910 1185" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve">
  <g visibility="visible" id="MasterSlide_1_Обычный_CCW_H">
   <desc>Master slide CCW_H</desc>
