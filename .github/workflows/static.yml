@@ -49,8 +49,6 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v2```
 
-6. **Важный момент для Vite:** Откройте файл `vite.config.js` в вашем проекте и укажите базовый путь, который будет соответствовать названию вашего репозитория. Это нужно, чтобы на GitHub Pages правильно подгружались все файлы.
-
 ```javascript
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
