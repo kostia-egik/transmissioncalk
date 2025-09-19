@@ -9,9 +9,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['jspdf'],
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/setupTests.ts',
-  }
 })
