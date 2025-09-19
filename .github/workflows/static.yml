@@ -1,0 +1,62 @@
+# Простой воркфлоу для развертывания статического контента на GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Запускается при отправке изменений в ветку `main`
+  push:
+    branches: ["main"]
+
+  # Позволяет запускать этот воркфлоу вручную со страницы Actions
+  workflow_dispatch:
+
+# Устанавливает права для GITHUB_TOKEN для разрешения развертывания на GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Разрешает только одно одновременное развертывание, отменяя предыдущие запуски
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Задача развертывания
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          # Загрузка из папки `dist`
+          path: './dist'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2```
+
+6. **Важный момент для Vite:** Откройте файл `vite.config.js` в вашем проекте и укажите базовый путь, который будет соответствовать названию вашего репозитория. Это нужно, чтобы на GitHub Pages правильно подгружались все файлы.
+
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  base: '/kostia-egik/transmissioncalk/', // <-- добавьте эту строку
+  plugins: [react()],
+})
