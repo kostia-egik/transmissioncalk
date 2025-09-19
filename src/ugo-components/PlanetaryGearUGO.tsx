@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { PlanetaryGearConfigType } from '../types';
 
@@ -89,9 +90,8 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
     const topHatchPathD = `M ${gearX + gearWidth}, ${topRingY - HATCH_THICKNESS} L ${gearX - housingArmOffset - HATCH_THICKNESS}, ${topRingY - HATCH_THICKNESS} L ${gearX - housingArmOffset - HATCH_THICKNESS}, ${centerY - RADIAL_SHAFT_CLEARANCE - HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING}, ${centerY - RADIAL_SHAFT_CLEARANCE - HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING}, ${centerY - RADIAL_SHAFT_CLEARANCE} L ${gearX - housingArmOffset}, ${centerY - RADIAL_SHAFT_CLEARANCE} L ${gearX - housingArmOffset}, ${topRingY} L ${gearX + gearWidth}, ${topRingY} Z`;
     const bottomHatchPathD = `M ${gearX + gearWidth}, ${bottomRingY + ringSegmentHeight + HATCH_THICKNESS} L ${gearX - housingArmOffset - HATCH_THICKNESS}, ${bottomRingY + ringSegmentHeight + HATCH_THICKNESS} L ${gearX - housingArmOffset - HATCH_THICKNESS}, ${centerY + RADIAL_SHAFT_CLEARANCE + HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING}, ${centerY + RADIAL_SHAFT_CLEARANCE + HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING}, ${centerY + RADIAL_SHAFT_CLEARANCE} L ${gearX - housingArmOffset}, ${centerY + RADIAL_SHAFT_CLEARANCE} L ${gearX - housingArmOffset}, ${bottomRingY + ringSegmentHeight} L ${gearX + gearWidth}, ${bottomRingY + ringSegmentHeight} Z`;
 
-    const carrierPoints = mirrored
-      ? `${gearX},${satelliteCenterY} ${gearX - SHAFT_GEAR_GAP},${satelliteCenterY} ${gearX - SHAFT_GEAR_GAP},${centerY}`
-      : `${gearX + gearWidth + SHAFT_GEAR_GAP},${centerY} ${gearX + gearWidth + SHAFT_GEAR_GAP},${satelliteCenterY} ${gearX + gearWidth},${satelliteCenterY}`;
+    const carrierPathMirrored = `M ${gearX},${satelliteCenterY} H ${gearX - SHAFT_GEAR_GAP} V ${centerY} H 0`;
+    const carrierPathNonMirrored = `M ${gearX + gearWidth},${satelliteCenterY} H ${gearX + gearWidth + SHAFT_GEAR_GAP} V ${centerY} H ${effWidth}`;
 
     mainGeometry = (
       <>
@@ -102,16 +102,15 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
           <path d={bottomArmPath} fill="none"/>
           {mirrored ? (
             <>
-              <line x1={0} y1={centerY} x2={gearX - SHAFT_GEAR_GAP} y2={centerY} />
               <line x1={gearX + gearWidth} y1={centerY} x2={effWidth} y2={centerY} />
+              <path d={carrierPathMirrored} fill="none" />
             </>
           ) : (
             <>
               <line x1={0} y1={centerY} x2={gearX} y2={centerY} />
-              <line x1={gearX + gearWidth + SHAFT_GEAR_GAP} y1={centerY} x2={effWidth} y2={centerY} />
+              <path d={carrierPathNonMirrored} fill="none" />
             </>
           )}
-          <polyline points={carrierPoints} fill="none"/>
            {mirrored ? (
             <line x1={gearX + gearWidth} y1={satelliteCenterY} x2={gearX + gearWidth + SHAFT_GEAR_GAP} y2={satelliteCenterY} fill="none" />
           ) : (
@@ -134,7 +133,7 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
       const topHatchPathD = `M ${gearX + gearWidth + housingArmOffset},${topRingY} L ${gearX + gearWidth + housingArmOffset + HATCH_THICKNESS},${topRingY} L ${gearX + gearWidth + housingArmOffset + HATCH_THICKNESS},${centerY - RADIAL_SHAFT_CLEARANCE - HATCH_THICKNESS} L ${effWidth - HORIZONTAL_END_PADDING},${centerY - RADIAL_SHAFT_CLEARANCE - HATCH_THICKNESS} L ${effWidth - HORIZONTAL_END_PADDING},${centerY - RADIAL_SHAFT_CLEARANCE} L ${gearX + gearWidth + housingArmOffset},${centerY - RADIAL_SHAFT_CLEARANCE} Z`;
       const bottomHatchPathD = `M ${gearX + gearWidth + housingArmOffset},${bottomRingY + ringSegmentHeight} L ${gearX + gearWidth + housingArmOffset + HATCH_THICKNESS},${bottomRingY + ringSegmentHeight} L ${gearX + gearWidth + housingArmOffset + HATCH_THICKNESS},${centerY + RADIAL_SHAFT_CLEARANCE + HATCH_THICKNESS} L ${effWidth - HORIZONTAL_END_PADDING},${centerY + RADIAL_SHAFT_CLEARANCE + HATCH_THICKNESS} L ${effWidth - HORIZONTAL_END_PADDING},${centerY + RADIAL_SHAFT_CLEARANCE} L ${gearX + gearWidth + housingArmOffset},${centerY + RADIAL_SHAFT_CLEARANCE} Z`;
       const outputShaftX_L = gearX - SHAFT_GEAR_GAP * 2;
-      const outputBracket_L = `M ${gearX}, ${topArmY} L ${outputShaftX_L}, ${topArmY} M ${gearX}, ${bottomArmY} L ${outputShaftX_L}, ${bottomArmY} M ${outputShaftX_L}, ${topArmY} L ${outputShaftX_L}, ${bottomArmY}`;
+      const outputBracket_L = `M ${gearX}, ${topArmY} H ${outputShaftX_L} V ${bottomArmY} H ${gearX}`;
       mainGeometry = (
         <>
           <path d={topHatchPathD} fill={`url(#${HATCH_PATTERN_ID})`} stroke="none" />
@@ -157,7 +156,7 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
       const topHatchPathD = `M ${gearX - housingArmOffset},${topRingY} L ${gearX - housingArmOffset - HATCH_THICKNESS},${topRingY} L ${gearX - housingArmOffset - HATCH_THICKNESS},${centerY - RADIAL_SHAFT_CLEARANCE - HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING},${centerY - RADIAL_SHAFT_CLEARANCE - HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING},${centerY - RADIAL_SHAFT_CLEARANCE} L ${gearX - housingArmOffset},${centerY - RADIAL_SHAFT_CLEARANCE} Z`;
       const bottomHatchPathD = `M ${gearX - housingArmOffset},${bottomRingY + ringSegmentHeight} L ${gearX - housingArmOffset - HATCH_THICKNESS},${bottomRingY + ringSegmentHeight} L ${gearX - housingArmOffset - HATCH_THICKNESS},${centerY + RADIAL_SHAFT_CLEARANCE + HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING},${centerY + RADIAL_SHAFT_CLEARANCE + HATCH_THICKNESS} L ${HORIZONTAL_END_PADDING},${centerY + RADIAL_SHAFT_CLEARANCE} L ${gearX - housingArmOffset},${centerY + RADIAL_SHAFT_CLEARANCE} Z`;
       const outputShaftX_R = gearX + gearWidth + SHAFT_GEAR_GAP * 2;
-      const outputBracket_R = `M ${gearX + gearWidth}, ${topArmY} L ${outputShaftX_R}, ${topArmY} M ${gearX + gearWidth}, ${bottomArmY} L ${outputShaftX_R}, ${bottomArmY} M ${outputShaftX_R}, ${topArmY} L ${outputShaftX_R}, ${bottomArmY}`;
+      const outputBracket_R = `M ${gearX + gearWidth}, ${topArmY} H ${outputShaftX_R} V ${bottomArmY} H ${gearX + gearWidth}`;
       mainGeometry = (
         <>
           <path d={topHatchPathD} fill={`url(#${HATCH_PATTERN_ID})`} stroke="none" />
@@ -184,8 +183,8 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
         const LOCAL_C_BRACKET_GAP = 2;
         const housingXM = gearX + gearWidth + HOUSING_SUN_GAP;
         const inputShaftX_R = housingXM + housingWidth + LOCAL_C_BRACKET_GAP;
-        const inputBracket_R = `M ${gearX + gearWidth}, ${topRingY + ringSegmentHeight/2} L ${inputShaftX_R}, ${topRingY + ringSegmentHeight/2} M ${gearX + gearWidth}, ${bottomRingY + ringSegmentHeight/2} L ${inputShaftX_R}, ${bottomRingY + ringSegmentHeight/2} M ${inputShaftX_R}, ${topRingY + ringSegmentHeight/2} L ${inputShaftX_R}, ${bottomRingY + ringSegmentHeight/2}`;
-        const outputShaft_L = `${gearX},${satelliteCenterY} ${gearX - SHAFT_GEAR_GAP},${satelliteCenterY} ${gearX - SHAFT_GEAR_GAP},${centerY}`;
+        const inputBracket_R = `M ${gearX + gearWidth}, ${topRingY + ringSegmentHeight/2} H ${inputShaftX_R} V ${bottomRingY + ringSegmentHeight/2} H ${gearX + gearWidth}`;
+        const outputShaft_L_d = `M ${gearX},${satelliteCenterY} H ${gearX - SHAFT_GEAR_GAP} V ${centerY} H 0`;
         
         mainGeometry = (
           <g stroke={STROKE_COLOR} strokeWidth={RECT_STROKE_WIDTH} fill="none">
@@ -194,8 +193,7 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
             <line x1={housingXM} y1={sunCenterY} x2={gearX + gearWidth} y2={sunCenterY} />
             <path d={inputBracket_R} />
             <line x1={inputShaftX_R} y1={centerY} x2={effWidth} y2={centerY} />
-            <polyline points={outputShaft_L} />
-            <line x1={0} y1={centerY} x2={gearX - SHAFT_GEAR_GAP} y2={centerY} />
+            <path d={outputShaft_L_d} />
             <line x1={gearX + gearWidth} y1={satelliteCenterY} x2={gearX + gearWidth + SHAFT_GEAR_GAP} y2={satelliteCenterY} />
           </g>
         );
@@ -204,8 +202,8 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
         const LOCAL_C_BRACKET_GAP = 2;
         const housingX = gearX - housingWidth - HOUSING_SUN_GAP;
         const inputShaftX_L = housingX - LOCAL_C_BRACKET_GAP;
-        const inputBracket_L = `M ${gearX}, ${topRingY + ringSegmentHeight/2} L ${inputShaftX_L}, ${topRingY + ringSegmentHeight/2} M ${gearX}, ${bottomRingY + ringSegmentHeight/2} L ${inputShaftX_L}, ${bottomRingY + ringSegmentHeight/2} M ${inputShaftX_L}, ${topRingY + ringSegmentHeight/2} L ${inputShaftX_L}, ${bottomRingY + ringSegmentHeight/2}`;
-        const outputShaft_R = `${gearX + gearWidth + SHAFT_GEAR_GAP},${centerY} ${gearX + gearWidth + SHAFT_GEAR_GAP},${satelliteCenterY} ${gearX + gearWidth},${satelliteCenterY}`;
+        const inputBracket_L = `M ${gearX}, ${topRingY + ringSegmentHeight/2} H ${inputShaftX_L} V ${bottomRingY + ringSegmentHeight/2} H ${gearX}`;
+        const outputShaft_R_d = `M ${gearX + gearWidth},${satelliteCenterY} H ${gearX + gearWidth + SHAFT_GEAR_GAP} V ${centerY} H ${effWidth}`;
         mainGeometry = (
           <g stroke={STROKE_COLOR} strokeWidth={RECT_STROKE_WIDTH} fill="none">
             <rect x={housingX} y={housingY} width={housingWidth} height={housingHeight} fill={`url(#${HATCH_PATTERN_ID})`} stroke="none" />
@@ -213,8 +211,7 @@ export const PlanetaryGearUGO: React.FC<PlanetaryGearUGOProps> = ({
             <line x1={housingX + housingWidth} y1={sunCenterY} x2={gearX} y2={sunCenterY} />
             <path d={inputBracket_L} />
             <line x1={0} y1={centerY} x2={inputShaftX_L} y2={centerY} />
-            <polyline points={outputShaft_R} />
-            <line x1={gearX + gearWidth + SHAFT_GEAR_GAP} y1={centerY} x2={effWidth} y2={centerY} />
+            <path d={outputShaft_R_d} />
             <line x1={gearX} y1={satelliteCenterY} x2={gearX - SHAFT_GEAR_GAP} y2={satelliteCenterY} />
           </g>
         );

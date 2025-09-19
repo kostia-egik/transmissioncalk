@@ -403,9 +403,16 @@ export const calculateSingleModule = (
       output.bevel_dm2 = d2 - b! * Math.sin(delta2_rad);
 
       switch(config) {
-        case BevelGearConfigType.Config1: output.outDirection = (inDirection === RotationDirection.Clockwise) ? RotationDirection.CounterClockwise : RotationDirection.Clockwise; break;
-        case BevelGearConfigType.Config2: case BevelGearConfigType.Config3: output.outDirection = inDirection; break;
-        default: output.outDirection = (inDirection === RotationDirection.Clockwise) ? RotationDirection.CounterClockwise : RotationDirection.Clockwise; break;
+        case BevelGearConfigType.Config1:
+          output.outDirection = (inDirection === RotationDirection.Clockwise) ? RotationDirection.CounterClockwise : RotationDirection.Clockwise;
+          break;
+        case BevelGearConfigType.Config2:
+        case BevelGearConfigType.Config3:
+          output.outDirection = inDirection;
+          break;
+        default:
+          output.outDirection = inDirection;
+          break;
       }
       
       output.outOrientation = (inShaftOrientation === ShaftOrientation.Horizontal) ? ShaftOrientation.Vertical : ShaftOrientation.Horizontal;
@@ -491,7 +498,7 @@ export const calculateCascade = (
   calculationData: StageCalculationData[]
 ): { results: FinalCalculationResults | null; updatedCalculationData: StageCalculationData[]; error?: string } => {
   
-  const updatedData = JSON.parse(JSON.stringify(calculationData)) as StageCalculationData[]; // Deep copy
+  const updatedData = structuredClone(calculationData);
   let overallError: string | undefined = undefined;
 
   let currentTorque = engineParams.initialTorque;

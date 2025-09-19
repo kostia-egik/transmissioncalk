@@ -1,7 +1,10 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState, useCallback, useEffect } from 'react';
 import { EngineParams, GearType, ModuleCalculationData, ParallelLayoutType, RotationDirection, ShaftOrientation } from '../types';
 import Button from './Button';
 import { getRotationIconPath } from '../constants';
+import { Tooltip } from './Tooltip';
+import { TOOLTIP_DATA } from '../tooltip-data';
+
 
 interface UgoContextMenuProps {
   moduleData: Omit<Partial<ModuleCalculationData>, 'type' | 'inputs'> & { type: GearType | 'Источник'; inputs?: any; };
@@ -28,19 +31,35 @@ interface UgoContextMenuProps {
   engineParams?: EngineParams;
 }
 
-const InfoItem: React.FC<{ label: string, value: string | number | undefined }> = ({ label, value }) => {
+const InfoItem: React.FC<{ 
+    label: string; 
+    value: string | number | undefined; 
+    dataKey?: string; 
+    onLabelClick?: (key: string, target: HTMLElement) => void;
+}> = ({ label, value, dataKey, onLabelClick }) => {
     if (value === undefined || value === null || String(value).trim() === '') {
         return null;
     }
+
+    const hasTooltip = dataKey && onLabelClick && TOOLTIP_DATA[dataKey];
+
     return (
-        <div className="flex justify-between text-xs">
-            <span className="text-gray-500">{label}</span>
+        <div className="flex justify-between text-xs items-center">
+            <span
+                className={`text-gray-500 ${hasTooltip ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''}`}
+                onClick={hasTooltip ? (e) => { e.stopPropagation(); onLabelClick(dataKey, e.currentTarget as HTMLElement); } : undefined}
+            >
+                {label}
+            </span>
             <span className="font-mono font-semibold text-gray-700">{value}</span>
         </div>
     );
 };
 
-const ModuleInfo: React.FC<{ moduleData: UgoContextMenuProps['moduleData'] }> = ({ moduleData }) => {
+const ModuleInfo: React.FC<{ 
+    moduleData: UgoContextMenuProps['moduleData'];
+    onParamClick: (key: string, target: HTMLElement) => void;
+}> = ({ moduleData, onParamClick }) => {
     const { type, u, inputs, fixedShaft } = moduleData;
 
     if (type === 'Источник' || !inputs) return null;
@@ -51,23 +70,51 @@ const ModuleInfo: React.FC<{ moduleData: UgoContextMenuProps['moduleData'] }> = 
 
     switch (type) {
         case GearType.Gear:
-            params = <><InfoItem label="z₁/z₂" value={`${inputs.z1}/${inputs.z2}`} /><InfoItem label="m" value={inputs.m} /></>;
+            params = <>
+                <InfoItem label="z₁" value={inputs.z1} dataKey="z1" onLabelClick={onParamClick} />
+                <InfoItem label="z₂" value={inputs.z2} dataKey="z2" onLabelClick={onParamClick} />
+                <InfoItem label="m, мм" value={inputs.m} dataKey="m" onLabelClick={onParamClick} />
+            </>;
             break;
         case GearType.Chain:
         case GearType.ToothedBelt:
-            params = <><InfoItem label="z₁/z₂" value={`${inputs.z1}/${inputs.z2}`} /><InfoItem label="p" value={inputs.p} /></>;
+            params = <>
+                <InfoItem label="z₁" value={inputs.z1} dataKey="z1" onLabelClick={onParamClick} />
+                <InfoItem label="z₂" value={inputs.z2} dataKey="z2" onLabelClick={onParamClick} />
+                <InfoItem label="p, мм" value={inputs.p} dataKey="p" onLabelClick={onParamClick} />
+            </>;
             break;
         case GearType.Belt:
-            params = <InfoItem label="d₁/d₂" value={`${inputs.d1}/${inputs.d2}`} />;
+            params = <>
+                <InfoItem label="d₁, мм" value={inputs.d1} dataKey="d1_input" onLabelClick={onParamClick} />
+                <InfoItem label="d₂, мм" value={inputs.d2} dataKey="d2_input" onLabelClick={onParamClick} />
+            </>;
             break;
         case GearType.Bevel:
-            params = <InfoItem label="z₁/z₂" value={`${inputs.z1}/${inputs.z2}`} />;
+             params = (
+                <>
+                    <InfoItem label="z₁" value={inputs.z1} dataKey="z1" onLabelClick={onParamClick} />
+                    <InfoItem label="z₂" value={inputs.z2} dataKey="z2" onLabelClick={onParamClick} />
+                    <InfoItem label="mₜₑ, мм" value={inputs.m} dataKey="m_te" onLabelClick={onParamClick} />
+                    <InfoItem label="b, мм" value={inputs.b} dataKey="b" onLabelClick={onParamClick} />
+                </>
+            );
             break;
         case GearType.Worm:
-            params = <InfoItem label="z₁/z₂" value={`${inputs.z1}/${inputs.z2}`} />;
+            params = (
+                <>
+                    <InfoItem label="z₁ (заходы)" value={inputs.z1} dataKey="z1" onLabelClick={onParamClick} />
+                    <InfoItem label="z₂ (колесо)" value={inputs.z2} dataKey="z2" onLabelClick={onParamClick} />
+                    <InfoItem label="q" value={inputs.q} dataKey="q" onLabelClick={onParamClick} />
+                </>
+            );
             break;
         case GearType.Planetary:
-            params = <><InfoItem label="zS/zR" value={`${inputs.zSun}/${inputs.zRing}`} /><InfoItem label="Фикс." value={fixedShaft} /></>;
+            params = <>
+                <InfoItem label="z Солнца" value={inputs.zSun} dataKey="zSun" onLabelClick={onParamClick} />
+                <InfoItem label="z Короны" value={inputs.zRing} dataKey="zRing" onLabelClick={onParamClick} />
+                <InfoItem label="Фикс." value={fixedShaft} dataKey="fixedShaft" onLabelClick={onParamClick} />
+            </>;
             break;
         default:
             return null;
@@ -77,7 +124,7 @@ const ModuleInfo: React.FC<{ moduleData: UgoContextMenuProps['moduleData'] }> = 
         <div className="p-3 border-b border-gray-200">
             <h4 className="text-xs font-bold uppercase text-gray-400 mb-2 text-center">Параметры</h4>
             <div className="space-y-1">
-                <InfoItem label="Передача (u)" value={uDisplay} />
+                <InfoItem label="Передача (u)" value={uDisplay} dataKey="u" onLabelClick={onParamClick} />
                 {params}
             </div>
         </div>
@@ -100,6 +147,34 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const isReversed = moduleData.isReversed ?? false;
   
+  const [activeTooltip, setActiveTooltip] = useState<{ contentKey: string; targetRect: DOMRect } | null>(null);
+
+  const handleParamClick = useCallback((contentKey: string, target: HTMLElement) => {
+      const currentTargetRect = target.getBoundingClientRect();
+      setActiveTooltip(prev => {
+          if (prev && prev.contentKey === contentKey) {
+              return null;
+          }
+          return { contentKey, targetRect: currentTargetRect };
+      });
+  }, []);
+
+  const handleCloseTooltip = useCallback(() => {
+      setActiveTooltip(null);
+  }, []);
+  
+  useEffect(() => {
+    if (activeTooltip) {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                handleCloseTooltip();
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }
+  }, [activeTooltip, handleCloseTooltip]);
+
   useLayoutEffect(() => {
     if (isMobileView || !menuRef.current) return;
 
@@ -119,8 +194,16 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
 
   return (
     <>
+      {activeTooltip && TOOLTIP_DATA[activeTooltip.contentKey] && (
+          <Tooltip 
+              content={TOOLTIP_DATA[activeTooltip.contentKey]} 
+              targetRect={activeTooltip.targetRect}
+              onClose={handleCloseTooltip}
+          />
+      )}
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose}></div>
       <div
+        id="ugo-context-menu"
         ref={menuRef}
         className={`fixed bg-white rounded-xl shadow-2xl shadow-slate-900/95 z-50 border border-gray-200 ${isMobileView ? mobileClasses : desktopClasses}`}
         onClick={(e) => e.stopPropagation()}
@@ -153,13 +236,13 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
             <div className="p-3 border-b border-gray-200">
                 <h4 className="text-xs font-bold uppercase text-gray-400 mb-2 text-center">Характеристики</h4>
                 <div className="space-y-1">
-                    <InfoItem label="Момент, Нм" value={engineParams.initialTorque} />
-                    <InfoItem label="Мин. об/мин" value={engineParams.initialMinRpm} />
-                    <InfoItem label="Макс. об/мин" value={engineParams.initialMaxRpm} />
+                    <InfoItem label="Момент, Нм" value={engineParams.initialTorque} dataKey="initialTorque" onLabelClick={handleParamClick} />
+                    <InfoItem label="Мин. об/мин" value={engineParams.initialMinRpm} dataKey="initialMinRpm" onLabelClick={handleParamClick} />
+                    <InfoItem label="Макс. об/мин" value={engineParams.initialMaxRpm} dataKey="initialMaxRpm" onLabelClick={handleParamClick} />
                 </div>
             </div>
         ) : (
-          <ModuleInfo moduleData={moduleData} />
+          <ModuleInfo moduleData={moduleData} onParamClick={handleParamClick} />
         )}
 
 

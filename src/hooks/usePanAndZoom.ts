@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback, useEffect, MouseEvent, TouchEvent, WheelEvent } from 'react';
 
 // Жестко задаем только абсолютный максимум. Минимум будет динамическим.
@@ -23,6 +22,7 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
   const isPanning = useRef(false);
   const startPanPoint = useRef({ x: 0, y: 0 });
   const lastTouchDistance = useRef<number | null>(null);
+  const animationFrame = useRef<number | null>(null);
 
   const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
 
@@ -68,13 +68,59 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
     };
   }, [calculateAndSetFitScale]);
 
+  const smoothPanTo = useCallback((targetX: number, targetY: number) => {
+    if (animationFrame.current) {
+        cancelAnimationFrame(animationFrame.current);
+    }
+
+    const startX = view.x;
+    const startY = view.y;
+    const dx = targetX - startX;
+    const dy = targetY - startY;
+    
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+        setView(prev => ({ ...prev, x: targetX, y: targetY }));
+        return;
+    }
+
+    const duration = 300; // ms
+    let startTime: number | null = null;
+
+    const easeOutQuad = (t: number) => t * (2 - t);
+
+    const animate = (timestamp: number) => {
+        if (!startTime) {
+            startTime = timestamp;
+        }
+
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeOutQuad(progress);
+
+        const newX = startX + dx * easedProgress;
+        const newY = startY + dy * easedProgress;
+        
+        setView(prev => ({ ...prev, x: newX, y: newY }));
+
+        if (progress < 1) {
+            animationFrame.current = requestAnimationFrame(animate);
+        } else {
+            animationFrame.current = null;
+        }
+    };
+
+    animationFrame.current = requestAnimationFrame(animate);
+  }, [view.x, view.y]);
+
   const onMouseDown = (e: MouseEvent) => {
     e.preventDefault();
+    if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
     isPanning.current = true;
     startPanPoint.current = { x: e.clientX - view.x, y: e.clientY - view.y };
   };
   
   const onTouchStart = (e: TouchEvent) => {
+    if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
     if (e.touches.length === 1) {
       isPanning.current = true;
       startPanPoint.current = { x: e.touches[0].clientX - view.x, y: e.touches[0].clientY - view.y };
@@ -127,6 +173,7 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
   const onWheel = (e: WheelEvent) => {
     e.preventDefault();
     if (!containerRef.current) return;
+    if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
     const scaleAmount = 1.1;
     const prospectiveScale = e.deltaY < 0 ? view.scale * scaleAmount : view.scale / scaleAmount;
 
@@ -146,6 +193,7 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
 
   const zoom = (direction: 'in' | 'out') => {
     if (!containerRef.current) return;
+    if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
     const scaleAmount = 1.2;
     const prospectiveScale = direction === 'in' ? view.scale * scaleAmount : view.scale / scaleAmount;
 
@@ -171,6 +219,7 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
 
   const fitToScreen = useCallback(() => {
     if (!containerRef.current || !contentWidth || !contentHeight) return;
+    if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
     
     // Сначала пересчитываем минимальный масштаб на случай изменения размеров
     calculateAndSetFitScale(); 
@@ -206,13 +255,14 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
   const centerOnPoint = useCallback((pointX: number, pointY: number) => {
     // Эта функция ожидает уже преобразованные координаты (с учетом viewbox)
     const { x, y } = calculateCenterOnPoint(pointX, pointY);
-    setView(prev => ({ ...prev, x, y }));
-  }, [calculateCenterOnPoint]);
+    smoothPanTo(x, y);
+  }, [calculateCenterOnPoint, smoothPanTo]);
 
   return {
     containerRef,
     view,
     setView,
+    smoothPanTo,
     transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
     panHandlers: {
       onMouseDown, onTouchStart, onMouseMove, onTouchMove, onMouseUp: onMouseUpOrLeave,

@@ -27,7 +27,7 @@ interface ZoomControlsProps {
 const ZoomControls: React.FC<ZoomControlsProps> = ({ onZoomIn, onZoomOut, onFitScreen }) => {
   const buttonClass = "p-2 bg-white/80 backdrop-blur-sm text-gray-700 border border-gray-300 rounded-full shadow-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500";
   return (
-    <div className="absolute bottom-4 right-4 z-20 flex flex-col space-y-2">
+    <div id="zoom-controls" className="absolute bottom-4 right-4 z-20 flex flex-col space-y-2">
       <button onClick={onZoomIn} className={buttonClass} title="Увеличить" aria-label="Увеличить масштаб">
         <ZoomInIcon />
       </button>

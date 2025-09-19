@@ -51,11 +51,11 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, targetRect, onClose }
 
   return ReactDOM.createPortal(
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} onTouchStart={onClose} />
+      <div className="fixed inset-0 z-[100]" onClick={onClose} onTouchStart={onClose} />
       <div
         ref={tooltipRef}
         style={{ ...position }}
-        className={`fixed z-50 w-64 p-3 bg-gray-800 text-white rounded-lg shadow-xl transition-opacity duration-200 ${isVisible ? 'opacity-100 animate-fade-in' : 'opacity-0'}`}
+        className={`fixed z-[110] w-64 p-3 bg-gray-800 text-white rounded-lg shadow-xl transition-opacity duration-200 ${isVisible ? 'opacity-100 animate-fade-in' : 'opacity-0'}`}
         role="tooltip"
         onClick={e => e.stopPropagation()}
       >

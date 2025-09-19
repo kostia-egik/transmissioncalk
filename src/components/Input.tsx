@@ -3,7 +3,7 @@ import React, { forwardRef } from 'react';
 interface InputProps {
   id?: string;
   name?: string; // Added name prop
-  label?: string;
+  label?: React.ReactNode;
   value: string | number;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; // Made onChange optional
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void; // Added onBlur prop

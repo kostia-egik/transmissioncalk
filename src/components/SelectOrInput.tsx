@@ -3,7 +3,7 @@ import Input from './Input';
 import Select from './Select';
 
 interface SelectOrInputProps {
-  label: string;
+  label: React.ReactNode;
   options: number[];
   value: string | number;
   onChange: (value: string | number) => void;

@@ -15,7 +15,7 @@ export const bearingHorizontalSVG = `
 
 export const beltDriveSVG = `
 <svg
-   width="170"
+   width="150"
    height="110"
    viewBox="0 0 170 110"
    version="1.1"
@@ -139,7 +139,7 @@ export const beltDriveSVG = `
 export const bevelGearConfig1SVG = `
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="250"
+   width="220"
    height="110"
    viewBox="0 0 250 110"
    version="1.1"
@@ -249,7 +249,7 @@ export const bevelGearConfig1SVG = `
 
 export const bevelGearConfig2SVG = `
 <svg
-   width="250"
+   width="220"
    height="110"
    viewBox="0 0 250 110"
    version="1.1"
@@ -361,7 +361,7 @@ export const bevelGearConfig2SVG = `
 
 export const bevelGearConfig3SVG = `
 <svg
-   width="250"
+   width="220"
    height="110"
    viewBox="0 0 250 110"
    version="1.1"
@@ -497,7 +497,7 @@ export const cardanShaftSVG = `
 
 export const chainDriveSVG = `
 <svg
-   width="170"
+   width="150"
    height="110"
    viewBox="0 0 170 110"
    version="1.1"
@@ -570,7 +570,7 @@ export const chainDriveSVG = `
 
 export const cylindricalGearSVG = `
 <svg
-   width="220"
+   width="200"
    height="110"
    viewBox="0 0 51.764706 110"
    version="1.1"
@@ -686,7 +686,7 @@ export const cylindricalGearSVG = `
 
 export const planetaryGearFixedCarrierSVG = `
 <svg
-   width="300"
+   width="260"
    height="110"
    viewBox="0 0 70.588235 110"
    version="1.1"
@@ -882,7 +882,7 @@ export const planetaryGearFixedCarrierSVG = `
 
 export const planetaryGearFixedRingSVG = `
 <svg
-   width="300"
+   width="260"
    height="110"
    viewBox="0 0 70.588235 110"
    version="1.1"
@@ -1080,7 +1080,7 @@ export const planetaryGearFixedRingSVG = `
 
 export const planetaryGearFixedSunSVG = `
 <svg
-   width="300"
+   width="260"
    height="110"
    viewBox="0 0 70.588235 110"
    version="1.1"
@@ -1297,7 +1297,7 @@ export const shaftDashedSVG = `
 
 export const toothedBeltDriveSVG = `
 <svg
-   width="350"
+   width="280"
    height="110"
    viewBox="0 0 350 110"
    version="1.1"
@@ -1508,7 +1508,7 @@ export const toothedBeltDriveSVG = `
 
 export const wormDriveBottomSVG = `
 <svg
-   width="300"
+   width="260"
    height="110"
    viewBox="0 0 70.588235 110"
    version="1.1"
@@ -1666,7 +1666,7 @@ export const wormDriveBottomSVG = `
 
 export const wormDriveTopSVG = `
 <svg
-   width="300"
+   width="260"
    height="110"
    viewBox="0 0 70.588235 110"
    version="1.1"

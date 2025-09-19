@@ -3,7 +3,7 @@ import React from 'react';
 interface SelectProps<T extends string | number> {
   id?: string;
   name?: string; // Added name prop
-  label?: string;
+  label?: React.ReactNode;
   value: T;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options: { value: T; label: string }[];

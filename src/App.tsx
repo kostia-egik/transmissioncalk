@@ -1,5 +1,6 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { AppStep, EngineParams, StageCalculationData, FinalCalculationResults, SchemeElement, GearType, ParallelLayoutType, ModuleCalculationData } from './types';
+import { AppStep, EngineParams, StageCalculationData, FinalCalculationResults, SchemeElement, GearType, ParallelLayoutType, ModuleCalculationData, PlanetaryConfig, PLANETARY_CONFIG_MAP, PlanetaryShaftType } from './types';
 import { DEFAULT_ENGINE_PARAMS } from './constants';
 import { SchemeBuilderPage } from './pages/SchemeBuilderPage';
 import { calculateCascade } from './services/calculationService';
@@ -10,15 +11,9 @@ import { FolderIcon } from './assets/icons/FolderIcon';
 import { ProjectActionsModal } from './components/ProjectActionsModal';
 import { InfoModal } from './components/InfoModal';
 import { InfoIcon } from './assets/icons/InfoIcon';
+import { getGearCategory } from './utils/gear';
+import OnboardingManager from './components/OnboardingManager';
 
-
-const getGearCategory = (type: GearType): 'parallel' | 'square' => {
-    const PARALLEL_TYPES = [GearType.Gear, GearType.Chain, GearType.ToothedBelt, GearType.Belt];
-    if (PARALLEL_TYPES.includes(type)) {
-        return 'parallel';
-    }
-    return 'square'; // Covers Bevel, Worm, Planetary
-};
 
 // Функция для подстановки значений по умолчанию для схемы
 const getSchemeModuleWithDefaults = (module: ModuleCalculationData): ModuleCalculationData => {
@@ -57,7 +52,37 @@ const getSchemeModuleWithDefaults = (module: ModuleCalculationData): ModuleCalcu
                 z2: getOrDefault(inputs.z2, 40),
             }
         };
-    // Для планетарной передачи можно оставить как есть или задать базовые z
+    case GearType.Planetary: {
+        const newInputs = {
+            ...inputs,
+            zSun: getOrDefault(inputs.zSun, 30),
+            zRing: getOrDefault(inputs.zRing, 64),
+            m: getOrDefault(inputs.m, 1),
+            shaftConfig: inputs.shaftConfig || PlanetaryConfig.SunToCarrier,
+        };
+        
+        // Принудительно рассчитываем zPlanet для корректного построения УГО
+        const zPlanet = (Number(newInputs.zRing) - Number(newInputs.zSun)) / 2;
+
+        // Определяем зафиксированный вал для правильного выбора УГО
+        let fixedShaft: PlanetaryShaftType | string = "Не определен";
+        const shaftConfig = newInputs.shaftConfig as PlanetaryConfig;
+        const shaftMap = PLANETARY_CONFIG_MAP[shaftConfig];
+        if (shaftMap) {
+            const { in: inShaft, out: outShaft } = shaftMap;
+            const shafts = [PlanetaryShaftType.Sun, PlanetaryShaftType.Carrier, PlanetaryShaftType.Ring];
+            fixedShaft = shafts.find(s => s !== inShaft && s !== outShaft) || "Не определен";
+        }
+
+        return {
+            ...module,
+            inputs: newInputs,
+            // Устанавливаем zPlanet, только если он еще не был рассчитан
+            zPlanet: module.zPlanet ?? zPlanet,
+            // Устанавливаем fixedShaft, чтобы УГО отобразился корректно, даже если расчет не проводился
+            fixedShaft: fixedShaft,
+        };
+    }
     default:
         return module;
   }
@@ -190,12 +215,52 @@ const App: React.FC = () => {
   const [scrollToModuleId, setScrollToModuleId] = useState<string | null>(null);
   const [isProjectActionsModalOpen, setIsProjectActionsModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  const [infoModalDefaultTab, setInfoModalDefaultTab] = useState<'workbench' | 'scheme'>('workbench');
+  const [infoModalDefaultTab, setInfoModalDefaultTab] = useState<'guide' | 'catalog'>('guide');
+  const [tourTrigger, setTourTrigger] = useState(0);
+  const [schemeTourTrigger, setSchemeTourTrigger] = useState(0);
 
-  const openInfoModal = (defaultTab: 'workbench' | 'scheme') => {
-    setInfoModalDefaultTab(defaultTab);
+  useEffect(() => {
+    // Автоматический запуск тура по "Рабочему столу" при первом посещении
+    const workbenchTourCompleted = localStorage.getItem('onboardingComplete_introjs_workbench_v1') === 'true';
+    if (!workbenchTourCompleted && currentStep === AppStep.Workbench) {
+        const timer = setTimeout(() => {
+            setTourTrigger(Date.now());
+        }, 500); // Небольшая задержка, чтобы UI успел отрендериться
+        return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
+  const openInfoModal = useCallback(() => {
+    // Теперь вкладка по умолчанию зависит от текущей страницы
+    setInfoModalDefaultTab(currentStep === AppStep.Workbench ? 'guide' : 'guide');
     setIsInfoModalOpen(true);
-  };
+  }, [currentStep]);
+
+  const handleStartWorkbenchTour = useCallback(() => {
+    if (currentStep !== AppStep.Workbench) {
+        alert("Чтобы запустить тур по рабочему столу, сначала перейдите на страницу рабочего стола.");
+        return;
+    }
+    setIsInfoModalOpen(false);
+    // Небольшая задержка, чтобы модальное окно успело закрыться перед появлением оверлея тура
+    setTimeout(() => {
+        localStorage.removeItem('onboardingComplete_introjs_workbench_v1');
+        setTourTrigger(Date.now());
+    }, 150);
+  }, [currentStep]);
+
+  const handleStartSchemeTour = useCallback(() => {
+    if (currentStep !== AppStep.SchemeDrawing) {
+        alert("Чтобы запустить тур по сборщику схем, сначала перейдите на страницу сборщика схем.");
+        return;
+    }
+    setIsInfoModalOpen(false);
+    setTimeout(() => {
+        localStorage.removeItem('onboardingComplete_introjs_scheme_v1');
+        setSchemeTourTrigger(Date.now());
+    }, 150);
+  }, [currentStep]);
+
 
   const isSchemeBuilt = schemeElements.length > 0;
 
@@ -258,7 +323,7 @@ const App: React.FC = () => {
     }
   }, [engineParams, showNotification]);
   
-  const handleModuleSelectionChange = (stageIndex: number, moduleId: string) => {
+  const handleModuleSelectionChange = useCallback((stageIndex: number, moduleId: string) => {
     const newData = calculationData.map((stage, sIndex) => {
       if (sIndex !== stageIndex) {
         return stage;
@@ -272,7 +337,7 @@ const App: React.FC = () => {
       };
     });
     handleCalculationDataChange(newData);
-  };
+  }, [calculationData, handleCalculationDataChange]);
 
 
   const handleBuildNewScheme = useCallback(() => {
@@ -300,6 +365,11 @@ const App: React.FC = () => {
       setInitialSchemeElements(defaultScheme);
       setSchemeElements(defaultScheme);
       setCurrentStep(AppStep.SchemeDrawing);
+      setTimeout(() => {
+          if (localStorage.getItem('onboardingComplete_introjs_scheme_v1') !== 'true') {
+              setSchemeTourTrigger(Date.now());
+          }
+      }, 500);
     };
 
     if (hasMissingParams) {
@@ -309,7 +379,7 @@ const App: React.FC = () => {
     } else {
         proceed();
     }
-  }, [calculationData, showNotification, setGlobalError, setShowFinalResults]);
+  }, [calculationData, showNotification]);
 
   const handleGoToSchemeView = useCallback((options?: { refresh?: boolean }) => {
     if (options?.refresh) {
@@ -325,7 +395,7 @@ const App: React.FC = () => {
     setCurrentStep(AppStep.SchemeDrawing);
   }, [engineParams, calculationData, schemeElements, showNotification]);
 
-  const handleResetConfiguration = () => {
+  const handleResetConfiguration = useCallback(() => {
     setCalculationData(defaultCalculationData);
     setFinalResults(null);
     setShowFinalResults(false);
@@ -333,7 +403,7 @@ const App: React.FC = () => {
     setCalculationDataSnapshot(null);
     setGlobalError(null);
     showNotification('Конфигурация передач сброшена к значениям по умолчанию.', 'success');
-  };
+  }, [showNotification]);
 
   const handleSaveProject = useCallback(() => {
         try {
@@ -344,12 +414,23 @@ const App: React.FC = () => {
                 calculationData,
                 schemeElements,
             };
+            
+            const getTimestamp = () => {
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = String(now.getMonth() + 1).padStart(2, '0');
+              const day = String(now.getDate()).padStart(2, '0');
+              const hours = String(now.getHours()).padStart(2, '0');
+              const minutes = String(now.getMinutes()).padStart(2, '0');
+              const seconds = String(now.getSeconds()).padStart(2, '0');
+              return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+            };
 
             const dataStr = JSON.stringify(projectState, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.download = "transmission-project.json";
+            link.download = `transmission-project_${getTimestamp()}.json`;
             link.href = url;
             document.body.appendChild(link);
             link.click();
@@ -364,11 +445,11 @@ const App: React.FC = () => {
         }
     }, [engineParams, calculationData, schemeElements, showNotification]);
 
-    const handleLoadClick = () => {
+    const handleLoadClick = useCallback(() => {
         fileInputRef.current?.click();
-    };
+    }, []);
 
-    const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelected = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -409,8 +490,28 @@ const App: React.FC = () => {
             setGlobalError(errorMsg);
         };
         reader.readAsText(file);
-    };
+    }, [handleCalculationDataChange, showNotification]);
 
+  const handleBackToWorkbench = useCallback(() => {
+      setCurrentStep(AppStep.Workbench);
+  }, []);
+
+  const handleNavigateToModule = useCallback((moduleId: string) => {
+      setScrollToModuleId(moduleId);
+      setCurrentStep(AppStep.Workbench);
+  }, []);
+
+  const handleOpenSchemeInfoModal = useCallback(() => {
+      openInfoModal();
+  }, [openInfoModal]);
+  
+  const handleScrollComplete = useCallback(() => {
+      setScrollToModuleId(null);
+  }, []);
+
+  const handleResetEngineParams = useCallback(() => {
+      setEngineParams(DEFAULT_ENGINE_PARAMS);
+  }, []);
 
   const isSchemeDrawing = currentStep === AppStep.SchemeDrawing;
   const appContainerClass = isSchemeDrawing ? "h-screen w-screen" : "min-h-screen w-full flex flex-col";
@@ -424,7 +525,7 @@ const App: React.FC = () => {
                 Расчет многоступенчатых трансмиссий
             </h1>
             <div className="flex space-x-2 ml-4">
-                <Button onClick={() => openInfoModal('workbench')} variant="secondary" title="Справка" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><InfoIcon /></Button>
+                <Button onClick={() => openInfoModal()} variant="secondary" title="Справка" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><InfoIcon /></Button>
                 <Button onClick={() => setIsProjectActionsModalOpen(true)} variant="secondary" title="Проект и Экспорт" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><FolderIcon /></Button>
             </div>
         </header>
@@ -441,7 +542,13 @@ const App: React.FC = () => {
             calculationData={calculationData}
             engineParams={engineParams}
         />
-        <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} defaultTab={infoModalDefaultTab} />
+        <InfoModal 
+            isOpen={isInfoModalOpen} 
+            onClose={() => setIsInfoModalOpen(false)} 
+            defaultTab={infoModalDefaultTab}
+            onStartWorkbenchTour={handleStartWorkbenchTour}
+            onStartSchemeTour={handleStartSchemeTour}
+        />
         <input type="file" ref={fileInputRef} onChange={handleFileSelected} style={{ display: 'none' }} accept=".json,application/json" />
         
         {notification && (
@@ -460,45 +567,48 @@ const App: React.FC = () => {
         )}
 
         {currentStep === AppStep.Workbench && (
-          <WorkbenchPage
-            engineParams={engineParams}
-            setEngineParams={setEngineParams}
-            calculationData={calculationData}
-            onCalculationDataChange={handleCalculationDataChange}
-            finalResults={finalResults}
-            showFinalResults={showFinalResults}
-            isSchemeBuilt={isSchemeBuilt}
-            onBuildNewScheme={handleBuildNewScheme}
-            onGoToSchemeView={handleGoToSchemeView}
-            calculationDataSnapshot={calculationDataSnapshot}
-            showNotification={showNotification}
-            finalResultsRef={finalResultsRef}
-            setGlobalError={setGlobalError}
-            resetEngineParams={() => setEngineParams(DEFAULT_ENGINE_PARAMS)}
-            onResetConfiguration={handleResetConfiguration}
-            scrollToModuleId={scrollToModuleId}
-            onScrollComplete={() => setScrollToModuleId(null)}
-          />
+          <>
+            <WorkbenchPage
+              engineParams={engineParams}
+              setEngineParams={setEngineParams}
+              calculationData={calculationData}
+              onCalculationDataChange={handleCalculationDataChange}
+              finalResults={finalResults}
+              showFinalResults={showFinalResults}
+              isSchemeBuilt={isSchemeBuilt}
+              onBuildNewScheme={handleBuildNewScheme}
+              onGoToSchemeView={handleGoToSchemeView}
+              calculationDataSnapshot={calculationDataSnapshot}
+              showNotification={showNotification}
+              finalResultsRef={finalResultsRef}
+              setGlobalError={setGlobalError}
+              resetEngineParams={handleResetEngineParams}
+              onResetConfiguration={handleResetConfiguration}
+              scrollToModuleId={scrollToModuleId}
+              onScrollComplete={handleScrollComplete}
+            />
+            <OnboardingManager tourKey="workbench" startTourTrigger={tourTrigger} />
+          </>
         )}
         
         {currentStep === AppStep.SchemeDrawing && (
-          <SchemeBuilderPage
-            ref={svgContainerRef}
-            engineParams={engineParams}
-            initialSchemeElements={initialSchemeElements}
-            schemeElements={schemeElements}
-            calculationData={calculationData}
-            setSchemeElements={setSchemeElements}
-            onBack={() => setCurrentStep(AppStep.Workbench)}
-            onNavigateToModule={(moduleId: string) => {
-              setScrollToModuleId(moduleId);
-              setCurrentStep(AppStep.Workbench);
-            }}
-            onModuleSelect={handleModuleSelectionChange}
-            onSaveProject={handleSaveProject}
-            onLoadClick={handleLoadClick}
-            onOpenInfoModal={() => openInfoModal('scheme')}
-          />
+          <>
+            <SchemeBuilderPage
+              ref={svgContainerRef}
+              engineParams={engineParams}
+              initialSchemeElements={initialSchemeElements}
+              schemeElements={schemeElements}
+              calculationData={calculationData}
+              setSchemeElements={setSchemeElements}
+              onBack={handleBackToWorkbench}
+              onNavigateToModule={handleNavigateToModule}
+              onModuleSelect={handleModuleSelectionChange}
+              onSaveProject={handleSaveProject}
+              onLoadClick={handleLoadClick}
+              onOpenInfoModal={handleOpenSchemeInfoModal}
+            />
+            <OnboardingManager tourKey="scheme" startTourTrigger={schemeTourTrigger} />
+          </>
         )}
       </main>
       {!isSchemeDrawing && (

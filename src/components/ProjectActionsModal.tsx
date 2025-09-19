@@ -7,6 +7,17 @@ import { EngineParams, FinalCalculationResults, ModuleCalculationData, SchemeEle
 import { calculateCascade } from '../services/calculationService';
 import Button from './Button';
 
+const getTimestamp = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+};
+
 const downloadFile = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -26,7 +37,7 @@ const handleExportSVG = async (svgContainer: HTMLElement) => {
     }
     const svgData = new XMLSerializer().serializeToString(svgElement);
     const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    downloadFile(blob, 'transmission-scheme.svg');
+    downloadFile(blob, `transmission-scheme_${getTimestamp()}.svg`);
 };
 
 const handleExportPNG = async (svgContainer: HTMLElement) => {
@@ -37,7 +48,7 @@ const handleExportPNG = async (svgContainer: HTMLElement) => {
         });
         const dataUrl = canvas.toDataURL('image/png');
         const blob = await (await fetch(dataUrl)).blob();
-        downloadFile(blob, 'transmission-scheme.png');
+        downloadFile(blob, `transmission-scheme_${getTimestamp()}.png`);
     } catch (error) {
         console.error('Ошибка при экспорте в PNG:', error);
         alert('Не удалось экспортировать в PNG. Подробности в консоли.');
@@ -114,18 +125,116 @@ const handleExportCSV = (calculationData: StageCalculationData[], finalResults: 
     
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
-    downloadFile(blob, 'transmission-report.csv');
+    downloadFile(blob, `transmission-report_${getTimestamp()}.csv`);
 };
 
-const handleExportPDF = async (svgContainer: HTMLElement | null, calculationData: StageCalculationData[], finalResults: FinalCalculationResults | null) => {
-    const reportContainer = document.createElement('div');
-    reportContainer.style.position = 'absolute';
-    reportContainer.style.left = '-9999px';
-    reportContainer.style.top = '0';
-    reportContainer.style.width = '1122px'; // A4 landscape width in pixels for jsPDF
-    reportContainer.style.padding = '20px';
-    reportContainer.style.backgroundColor = 'white';
-    reportContainer.style.fontFamily = 'Arial, sans-serif';
+const createStyledElement = (tag: string, styles: Partial<CSSStyleDeclaration>, text?: string): HTMLElement => {
+    const el = document.createElement(tag);
+    Object.assign(el.style, styles);
+    if (text) el.textContent = text;
+    return el;
+};
+
+const createTableCell = (text: string | number, isHeader = false, styles: Partial<CSSStyleDeclaration> = {}) => {
+    const cell = document.createElement(isHeader ? 'th' : 'td');
+    cell.textContent = String(text);
+    Object.assign(cell.style, {
+        padding: '2px 4px',
+        border: '1px solid #ddd',
+        textAlign: 'left',
+        ...styles,
+    });
+    return cell;
+};
+
+const handleExportPDF = async (
+    svgContainer: HTMLElement | null,
+    engineParams: EngineParams,
+    calculationData: StageCalculationData[],
+    finalResults: FinalCalculationResults | null
+) => {
+    const doc = new jsPDF({ orientation: 'l', unit: 'px', format: 'a4' });
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    const pdfHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+
+    // --- Page 1: Title and Scheme ---
+    doc.setFontSize(24);
+    doc.text('Отчет по расчету трансмиссии', pdfWidth / 2, margin + 10, { align: 'center' });
+    
+    if (svgContainer) {
+        const canvas = await html2canvas(svgContainer, { scale: 2, backgroundColor: '#ffffff' });
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pageContentWidth = pdfWidth - margin * 2;
+        const pageContentHeight = pdfHeight - margin * 2 - 30; // Extra space for title
+        
+        const imgRatio = canvas.width / canvas.height;
+        
+        let finalWidth, finalHeight;
+        if (imgRatio > (pageContentWidth / pageContentHeight)) {
+            finalWidth = pageContentWidth;
+            finalHeight = finalWidth / imgRatio;
+        } else {
+            finalHeight = pageContentHeight;
+            finalWidth = finalHeight * imgRatio;
+        }
+        
+        const imgX = (pdfWidth - finalWidth) / 2;
+        const imgY = (pdfHeight - finalHeight) / 2 + 20;
+        
+        doc.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
+    } else {
+        doc.setFontSize(12);
+        doc.text('Кинематическая схема не была сгенерирована.', pdfWidth / 2, pdfHeight / 2, { align: 'center' });
+    }
+
+    // --- Subsequent pages: Data Tables ---
+    const tablesContainer = createStyledElement('div', {
+        position: 'absolute',
+        left: '-9999px',
+        top: '0',
+        width: '1122px', // A4 landscape width
+        padding: '20px',
+        backgroundColor: 'white',
+        fontFamily: 'Arial, sans-serif',
+    });
+
+    const createRow = (label: string, value: string) => {
+        const tr = document.createElement('tr');
+        tr.appendChild(createTableCell(label));
+        const valueCell = createTableCell('');
+        valueCell.appendChild(createStyledElement('b', {}, value));
+        tr.appendChild(valueCell);
+        return tr;
+    };
+    
+    // 1. Engine Params Table
+    tablesContainer.appendChild(createStyledElement('h2', { fontSize: '18px', marginTop: '0px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }, 'Параметры источника'));
+    const engineTable = createStyledElement('table', { width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginTop: '10px' }) as HTMLTableElement;
+    engineTable.appendChild(createRow('Начальный крутящий момент, Нм:', String(engineParams.initialTorque)));
+    engineTable.appendChild(createRow('Начальные обороты (мин-макс), об/мин:', `${engineParams.initialMinRpm} - ${engineParams.initialMaxRpm}`));
+    engineTable.appendChild(createRow('Начальное направление вращения:', engineParams.initialDirection));
+    engineTable.appendChild(createRow('Начальная ориентация вала:', engineParams.initialOrientation === 'horizontal' ? 'Горизонтальный' : 'Вертикальный'));
+    tablesContainer.appendChild(engineTable);
+
+    // 2. Final Results Table
+    if (finalResults) {
+        tablesContainer.appendChild(createStyledElement('h2', { fontSize: '18px', marginTop: '20px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }, 'Итоговые параметры'));
+        const finalTable = createStyledElement('table', { width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginTop: '10px' }) as HTMLTableElement;
+        finalTable.appendChild(createRow('Общее передаточное отношение:', finalResults.totalGearRatio.toFixed(4)));
+        finalTable.appendChild(createRow('Общий КПД:', finalResults.totalEfficiency.toFixed(4)));
+        finalTable.appendChild(createRow('Выходной момент (Нм):', finalResults.finalTorque.toFixed(2)));
+        finalTable.appendChild(createRow('Выходные обороты (мин-макс):', `${finalResults.finalMinRpm.toFixed(0)} - ${finalResults.finalMaxRpm.toFixed(0)}`));
+        tablesContainer.appendChild(finalTable);
+    }
+    
+    // 3. Stage Parameters Table
+    tablesContainer.appendChild(createStyledElement('h2', { fontSize: '18px', marginTop: '20px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }, 'Параметры по ступеням'));
+    const paramsTable = createStyledElement('table', { width: '100%', borderCollapse: 'collapse', fontSize: '8px', marginTop: '10px' }) as HTMLTableElement;
+    const thead = document.createElement('thead');
+    thead.style.backgroundColor = '#f2f2f2';
+    const headerRow = document.createElement('tr');
 
     const exportableRows = getExportableRows(calculationData);
     const allModules = calculationData.flatMap(s => s.modules);
@@ -133,80 +242,71 @@ const handleExportPDF = async (svgContainer: HTMLElement | null, calculationData
     const staticHeaders = ['Ступень', 'Статус', 'Тип', 'u', 'η'];
     const cascadeHeaders = ['Вх. Момент', 'Вх. об/мин', 'Вых. Момент', 'Вых. об/мин'];
     const allTableHeaders = [...staticHeaders, ...dynamicHeaders, ...cascadeHeaders];
-
-    let content = `<h1 style="text-align: center; font-size: 24px; margin-bottom: 20px;">Отчет по расчету трансмиссии</h1>`;
     
-    if (svgContainer) {
-        content += `<h2 style="font-size: 18px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Кинематическая схема</h2>`;
-        const svgClone = svgContainer.querySelector('svg')?.cloneNode(true) as SVGSVGElement;
-        if (svgClone) {
-            svgClone.style.width = '100%';
-            svgClone.style.height = 'auto';
-            content += svgClone.outerHTML;
-        }
-    } else {
-        content += `<p style="text-align: center; color: #555; font-style: italic; margin-top: 20px; padding: 10px; border: 1px dashed #ccc;">Кинематическая схема не была сгенерирована.</p>`;
-    }
+    allTableHeaders.forEach(header => headerRow.appendChild(createTableCell(header, true)));
+    thead.appendChild(headerRow);
+    paramsTable.appendChild(thead);
 
-    if (finalResults) {
-        content += `<h2 style="font-size: 18px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Итоговые параметры</h2><table style="width: 100%; border-collapse: collapse; font-size: 12px;"><tr><td style="padding: 4px; border: 1px solid #ddd;">Общее передаточное отношение:</td><td style="padding: 4px; border: 1px solid #ddd;"><b>${finalResults.totalGearRatio.toFixed(4)}</b></td></tr><tr><td style="padding: 4px; border: 1px solid #ddd;">Общий КПД:</td><td style="padding: 4px; border: 1px solid #ddd;"><b>${finalResults.totalEfficiency.toFixed(4)}</b></td></tr><tr><td style="padding: 4px; border: 1px solid #ddd;">Выходной момент (Нм):</td><td style="padding: 4px; border: 1px solid #ddd;"><b>${finalResults.finalTorque.toFixed(2)}</b></td></tr><tr><td style="padding: 4px; border: 1px solid #ddd;">Выходные обороты (мин-макс):</td><td style="padding: 4px; border: 1px solid #ddd;"><b>${finalResults.finalMinRpm.toFixed(0)} - ${finalResults.finalMaxRpm.toFixed(0)}</b></td></tr></table>`;
-    }
-
-    content += `<h2 style="font-size: 18px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Параметры по ступеням</h2><table style="width: 100%; border-collapse: collapse; font-size: 8px; margin-top: 10px;"><thead style="background-color: #f2f2f2;"><tr>`;
-    allTableHeaders.forEach(header => {
-        content += `<th style="padding: 2px 4px; border: 1px solid #ddd; text-align: left;">${header}</th>`;
-    });
-    content += `</tr></thead><tbody>`;
-
+    const tbody = document.createElement('tbody');
     exportableRows.forEach(row => {
-        content += `<tr>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: center;">${row.stage}</td>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd;">${row.status}</td>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd;">${row.type}</td>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: right;">${row.u?.toFixed(4) || 'N/A'}</td>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: right;">${row.eta || 'N/A'}</td>`;
-        dynamicHeaders.forEach(headerKey => {
-            content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: right;">${row[headerKey] || ''}</td>`;
-        });
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: right;">${row.cascadeIn?.torque.toFixed(2) || 'N/A'}</td>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: right;">${row.cascadeIn ? `${row.cascadeIn.minRpm.toFixed(0)}-${row.cascadeIn.maxRpm.toFixed(0)}` : 'N/A'}</td>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: right;">${row.cascadeOut?.torque.toFixed(2) || 'N/A'}</td>`;
-        content += `<td style="padding: 2px 4px; border: 1px solid #ddd; text-align: right;">${row.cascadeOut ? `${row.cascadeOut.minRpm.toFixed(0)}-${row.cascadeOut.maxRpm.toFixed(0)}` : 'N/A'}</td>`;
-        content += `</tr>`;
-    });
+        const tr = document.createElement('tr');
+        tr.appendChild(createTableCell(row.stage, false, { textAlign: 'center' }));
+        tr.appendChild(createTableCell(row.status));
+        tr.appendChild(createTableCell(row.type));
+        tr.appendChild(createTableCell(row.u?.toFixed(4) || 'N/A', false, { textAlign: 'right' }));
+        tr.appendChild(createTableCell(row.eta || 'N/A', false, { textAlign: 'right' }));
 
-    content += `</tbody></table>`;
-    reportContainer.innerHTML = content;
-    document.body.appendChild(reportContainer);
+        dynamicHeaders.forEach(headerKey => {
+            tr.appendChild(createTableCell(row[headerKey] || '', false, { textAlign: 'right' }));
+        });
+
+        tr.appendChild(createTableCell(row.cascadeIn?.torque.toFixed(2) || 'N/A', false, { textAlign: 'right' }));
+        tr.appendChild(createTableCell(row.cascadeIn ? `${row.cascadeIn.minRpm.toFixed(0)}-${row.cascadeIn.maxRpm.toFixed(0)}` : 'N/A', false, { textAlign: 'right' }));
+        tr.appendChild(createTableCell(row.cascadeOut?.torque.toFixed(2) || 'N/A', false, { textAlign: 'right' }));
+        tr.appendChild(createTableCell(row.cascadeOut ? `${row.cascadeOut.minRpm.toFixed(0)}-${row.cascadeOut.maxRpm.toFixed(0)}` : 'N/A', false, { textAlign: 'right' }));
+        tbody.appendChild(tr);
+    });
+    paramsTable.appendChild(tbody);
+    tablesContainer.appendChild(paramsTable);
+
+    document.body.appendChild(tablesContainer);
 
     try {
-        const canvas = await html2canvas(reportContainer, { scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: 'a4' });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasHeight / canvasWidth;
-        const finalImgHeight = pdfWidth * ratio;
-        let heightLeft = finalImgHeight;
+        const tablesCanvas = await html2canvas(tablesContainer, { scale: 2 });
+        const tablesImgData = tablesCanvas.toDataURL('image/png');
+        
+        const tablesImgWidth = tablesCanvas.width;
+        const tablesImgHeight = tablesCanvas.height;
+        const tablesRatio = tablesImgHeight / tablesImgWidth;
+        
+        const contentWidth = pdfWidth;
+        const imgHeightOnPdf = contentWidth * tablesRatio;
+        
+        let heightLeft = imgHeightOnPdf;
         let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, finalImgHeight);
-        heightLeft -= pdfHeight;
-        while (heightLeft > 0) {
-            position -= pdfHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, finalImgHeight);
+
+        if (imgHeightOnPdf > 0) {
+            doc.addPage();
+            doc.addImage(tablesImgData, 'PNG', 0, position, contentWidth, imgHeightOnPdf);
             heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                doc.addPage();
+                doc.addImage(tablesImgData, 'PNG', 0, position, contentWidth, imgHeightOnPdf);
+                heightLeft -= pdfHeight;
+            }
         }
-        pdf.save('transmission-report.pdf');
+        
+        doc.save(`transmission-report_${getTimestamp()}.pdf`);
     } catch (error) {
         console.error('Ошибка при экспорте в PDF:', error);
         alert('Не удалось экспортировать в PDF. Подробности в консоли.');
     } finally {
-        document.body.removeChild(reportContainer);
+        document.body.removeChild(tablesContainer);
     }
 };
+
 
 const isStageCalculationData = (el: SchemeElement): el is StageCalculationData => {
     if (!el || typeof el !== 'object' || 'type' in el) return false;
@@ -260,13 +360,11 @@ export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({ isOpen
                 break;
             case 'pdf':
                 if (context === 'workbench') {
-                    if (!window.confirm('Кинематическая схема не построена. Отчет будет содержать только расчетные таблицы. Продолжить?')) {
-                        setIsLoading(false);
-                        return;
-                    }
-                    await handleExportPDF(null, effectiveCalculationData, results);
+                    alert('Экспорт полного PDF-отчета со схемой доступен только со страницы "Сборщик схем".\n\nДля экспорта только расчетных данных используйте формат CSV.');
+                    setIsLoading(false);
+                    return;
                 } else if (svgContainerRef?.current) {
-                    await handleExportPDF(svgContainerRef.current, effectiveCalculationData, results);
+                    await handleExportPDF(svgContainerRef.current, engineParams, effectiveCalculationData, results);
                 }
                 break;
         }
@@ -321,8 +419,8 @@ export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({ isOpen
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 mb-2 border-b pb-1">Только схема</h4>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button onClick={() => onExportClick('svg')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Доступно только в сборщике схем' : ''}>Экспорт в SVG</Button>
-                      <Button onClick={() => onExportClick('png')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Доступно только в сборщике схем' : ''}>Экспорт в PNG</Button>
+                      <Button onClick={() => onExportClick('svg')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Экспорт схемы доступен только со страницы Сборщика схем' : ''}>Экспорт в SVG</Button>
+                      <Button onClick={() => onExportClick('png')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Экспорт схемы доступен только со страницы Сборщика схем' : ''}>Экспорт в PNG</Button>
                     </div>
                   </div>
                 </div>

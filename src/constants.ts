@@ -33,6 +33,52 @@ export const CHAIN_PITCHES: number[] = [8.0, 9.525, 12.7, 15.875, 19.05, 25.4, 3
 export const TOOTHED_BELT_PITCHES: number[] = [2, 2.5, 3, 5, 8, 10, 14, 20];
 export const WORM_DIAMETER_COEFFICIENTS: number[] = [8, 10, 12.5, 16, 20, 25];
 
+// База данных типовых КПД
+export interface EfficiencyData {
+  typical: number;
+  range: string;
+  description: string;
+}
+
+export const EFFICIENCY_DATABASE: Record<GearType, EfficiencyData> = {
+  [GearType.Gear]: {
+    typical: 0.98,
+    range: '0.96 – 0.99',
+    description: 'Для закрытых, хорошо смазываемых цилиндрических передач с качественными подшипниками.',
+  },
+  [GearType.Chain]: {
+    typical: 0.95,
+    range: '0.92 – 0.97',
+    description: 'Зависит от качества смазки, натяжения и износа цепи.',
+  },
+  [GearType.Planetary]: {
+    typical: 0.98,
+    range: '0.97 – 0.99',
+    description: 'Высокий КПД за счет распределения нагрузки между сателлитами.',
+  },
+  [GearType.ToothedBelt]: {
+    typical: 0.96,
+    range: '0.94 – 0.98',
+    description: 'КПД практически не зависит от нагрузки, но чувствителен к натяжению ремня.',
+  },
+  [GearType.Belt]: {
+    typical: 0.95,
+    range: '0.94 – 0.96',
+    description: 'Для клиноременных передач. КПД может снижаться из-за проскальзывания.',
+  },
+  [GearType.Bevel]: {
+    typical: 0.97,
+    range: '0.95 – 0.98',
+    description: 'Для конических передач с прямым зубом. Передачи с круговым зубом могут иметь более высокий КПД.',
+  },
+  [GearType.Worm]: {
+    typical: 0.70,
+    range: '0.50 – 0.90',
+    description: 'Сильно зависит от угла подъема винтовой линии (γ) и коэффициента трения. Низкие передаточные числа (u) и высокий угол подъема (γ) дают больший КПД.',
+  },
+};
+
+
 // SVG Icon Definitions
 const ICON_ROTATION_CW_H_SVG = `<svg version="1.2" baseProfile="tiny" width="210mm" height="297mm" viewBox="6200 3170 3070 1185" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve">
  <g visibility="visible" id="MasterSlide_1_Обычный_CW_H">

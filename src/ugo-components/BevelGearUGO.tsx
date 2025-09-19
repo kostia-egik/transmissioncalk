@@ -107,6 +107,8 @@ export const BevelGearUGO: React.FC<BevelGearUGOProps> = ({
       break;
   }
   
+  const combinedPath = `M ${trapV_p.p4.x},${trapV_p.p4.y} L ${trapV_p.p3.x},${trapV_p.p3.y} L ${trapV_p.p2.x},${trapV_p.p2.y} L ${trapH_p.p3.x},${trapH_p.p3.y} L ${trapH_p.p4.x},${trapH_p.p4.y} L ${trapV_p.p1.x},${trapV_p.p1.y} Z`;
+
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} xmlns="http://www.w3.org/2000/svg">
       <g stroke={STROKE_COLOR} strokeWidth={SHAFT_STROKE_WIDTH}>
@@ -114,11 +116,11 @@ export const BevelGearUGO: React.FC<BevelGearUGOProps> = ({
         <line x1={shaftH_x1} y1={shaftH_y1} x2={shaftH_x2} y2={shaftH_y2} />
         <line x1={shaftV_x1} y1={shaftV_y1} x2={shaftV_x2} y2={shaftV_y2} />
         
-        {/* Трапеция 1 (на вертикальном валу) */}
-        <path d={`M ${trapV_p.p1.x},${trapV_p.p1.y} L ${trapV_p.p2.x},${trapV_p.p2.y} L ${trapV_p.p3.x},${trapV_p.p3.y} L ${trapV_p.p4.x},${trapV_p.p4.y} Z`} fill="white" />
+        {/* Объединенная форма шестерен для исправления артефактов на углах */}
+        <path d={combinedPath} fill="white" />
         
-        {/* Трапеция 2 (на горизонтальном валу) */}
-        <path d={`M ${trapH_p.p1.x},${trapH_p.p1.y} L ${trapH_p.p2.x},${trapH_p.p2.y} L ${trapH_p.p3.x},${trapH_p.p3.y} L ${trapH_p.p4.x},${trapH_p.p4.y} Z`} fill="white" />
+        {/* Внутренняя разделительная линия */}
+        <line x1={trapV_p.p1.x} y1={trapV_p.p1.y} x2={trapV_p.p2.x} y2={trapV_p.p2.y} />
 
         {/* Крестики фиксации */}
         <line x1={crossH_center.x - crossOffset} y1={crossH_center.y - crossOffset} x2={crossH_center.x + crossOffset} y2={crossH_center.y + crossOffset} />
