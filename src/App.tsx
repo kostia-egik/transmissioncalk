@@ -1,5 +1,7 @@
 
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { AppStep, EngineParams, StageCalculationData, FinalCalculationResults, SchemeElement, GearType, ParallelLayoutType, ModuleCalculationData, PlanetaryConfig, PLANETARY_CONFIG_MAP, PlanetaryShaftType } from './types';
 import { DEFAULT_ENGINE_PARAMS } from './constants';
 import { SchemeBuilderPage } from './pages/SchemeBuilderPage';
@@ -511,6 +513,7 @@ const App: React.FC = () => {
 
   return (
     <div className={appContainerClass}>
+      <Analytics />
       {!isSchemeDrawing && (
         <header className="w-full p-2 sm:p-4 bg-white/80 backdrop-blur-sm sticky top-0 z-30 border-b border-slate-200 flex justify-between items-center shadow-md shadow-slate-900/40">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
