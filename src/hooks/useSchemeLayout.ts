@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import {
-    EngineParams, ModuleCalculationData, StageCalculationData, GearType, WormGearConfigType,
+    EngineParams, ModuleCalculationData, StageCalculationData, GearType,
     PowerSourceDirection, ParallelLayoutType, BevelGearConfigType, BevelGearPlacement, PlanetaryShaftType,
     PlanetaryGearConfigType, PlanetaryInputParams, SchemeElement, SpacerShaft,
-    RotationDirection, ShaftOrientation, PlanetaryConfig
+    PlanetaryConfig
 } from '../types';
 
 // UGO Component Imports
@@ -513,10 +513,16 @@ export const useSchemeLayout = ({
                     }
                     const width = UGO_PARALLEL_WIDTH;
                     const height = UGO_PARALLEL_HEIGHT;
-                    let tx, ty, rot = 0;
+                    let tx: number, ty: number, rot: number = 0;
                     let ugoBbox: Bbox;
                     const ugoTransform: UgoTransform = { translateX: 0, translateY: 0, rotation: 0, internalOffsetY: 0, rotationCenterX: width / 2, rotationCenterY: height / 2, width, height, scaleX: 1, scaleY: 1 };
                     const strokeColor = module.isSelected ? undefined : INACTIVE_UGO_COLOR;
+
+                    const interactionData: SelectedUgoData = { module, stageIndex: elementIndex, inputDirection: flowDirection, currentTurn: stage.turn, isMultiModuleStage: true };
+                    const handlers = createInteractionHandlers((e) => onUgoInteraction(interactionData, e));
+                    const isSelected = selectedUgo?.module.id === module.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === module.id);
+                    const isOverlapping = overlappingUgoIds.has(module.id);
+
                     if (isVertical) {
                         rot = cursor.direction === 'down' ? 90 : -90;
                         tx = cursor.x;
@@ -537,12 +543,17 @@ export const useSchemeLayout = ({
                         const mY = Math.min(...g.map(p => p.y));
                         const mY2 = Math.max(...g.map(p => p.y));
                         ugoBbox = { x: mX, y: mY, width: mX2 - mX, height: mY2 - mY };
-                        let UgoComponent = { [GearType.Gear]: CylindricalGearUGO, [GearType.Belt]: BeltDriveUGO, [GearType.Chain]: ChainDriveUGO, [GearType.ToothedBelt]: ToothedBeltDriveUGO }[module.type];
-                        const interactionData: SelectedUgoData = { module, stageIndex: elementIndex, inputDirection: flowDirection, currentTurn: stage.turn, isMultiModuleStage: true };
-                        const handlers = createInteractionHandlers((e) => onUgoInteraction(interactionData, e));
-                        const isSelected = selectedUgo?.module.id === module.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === module.id);
-                        const isOverlapping = overlappingUgoIds.has(module.id);
-                        if (UgoComponent) svgElements.push(React.createElement('g', { key: module.id, 'data-ugo-id': module.id, transform: transformString, ...handlers, style: { cursor: 'pointer' }, filter: isOverlapping ? "url(#overlap-glow)" : undefined }, isSelected && React.createElement('rect', { x: -10, y: -10, width: width + 20, height: height + 20, fill: "url(#radial-glow-gradient)", style: { pointerEvents: 'none' } }), React.createElement('rect', { x: 0, y: 0, width: width, height: height, fill: "transparent" }), React.createElement(UgoComponent, { width: width, height: height, ...ugoProps, strokeColor: strokeColor })));
+                        
+                        const ugoWrapperProps = { key: module.id, 'data-ugo-id': module.id, transform: transformString, ...handlers, style: { cursor: 'pointer' }, filter: isOverlapping ? "url(#overlap-glow)" : undefined };
+                        const selectionRect = isSelected && React.createElement('rect', { x: -10, y: -10, width: width + 20, height: height + 20, fill: "url(#radial-glow-gradient)", style: { pointerEvents: 'none' } });
+                        const transparentRect = React.createElement('rect', { x: 0, y: 0, width: width, height: height, fill: "transparent" });
+                        
+                        switch(module.type) {
+                            case GearType.Gear: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(CylindricalGearUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                            case GearType.Belt: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(BeltDriveUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                            case GearType.Chain: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(ChainDriveUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                            case GearType.ToothedBelt: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(ToothedBeltDriveUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                        }
                         cursor.y += (cursor.direction === 'down' ? width : -width);
                     } else { // HORIZONTAL LOGIC
                         const inputShaftYOffset = (isLayoutInverted) ? UGO_PARALLEL_SHAFT_Y1 + UGO_PARALLEL_SHAFT_DISTANCE : UGO_PARALLEL_SHAFT_Y1;
@@ -558,12 +569,17 @@ export const useSchemeLayout = ({
                         ugoTransform.translateY = ty;
                         const transformString = `translate(${tx}, ${ty})`;
                         ugoBbox = { x: tx, y: ty, width, height };
-                        let UgoComponent = { [GearType.Gear]: CylindricalGearUGO, [GearType.Belt]: BeltDriveUGO, [GearType.Chain]: ChainDriveUGO, [GearType.ToothedBelt]: ToothedBeltDriveUGO }[module.type];
-                        const interactionData: SelectedUgoData = { module, stageIndex: elementIndex, inputDirection: flowDirection, currentTurn: stage.turn, isMultiModuleStage: true };
-                        const handlers = createInteractionHandlers((e) => onUgoInteraction(interactionData, e));
-                        const isSelected = selectedUgo?.module.id === module.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === module.id);
-                        const isOverlapping = overlappingUgoIds.has(module.id);
-                        if (UgoComponent) svgElements.push(React.createElement('g', { key: module.id, 'data-ugo-id': module.id, transform: transformString, ...handlers, style: { cursor: 'pointer' }, filter: isOverlapping ? "url(#overlap-glow)" : undefined }, isSelected && React.createElement('rect', { x: -10, y: -10, width: width + 20, height: height + 20, fill: "url(#radial-glow-gradient)", style: { pointerEvents: 'none' } }), React.createElement('rect', { x: 0, y: 0, width: width, height: height, fill: "transparent" }), React.createElement(UgoComponent, { width: width, height: height, ...ugoProps, strokeColor: strokeColor })));
+
+                        const ugoWrapperProps = { key: module.id, 'data-ugo-id': module.id, transform: transformString, ...handlers, style: { cursor: 'pointer' }, filter: isOverlapping ? "url(#overlap-glow)" : undefined };
+                        const selectionRect = isSelected && React.createElement('rect', { x: -10, y: -10, width: width + 20, height: height + 20, fill: "url(#radial-glow-gradient)", style: { pointerEvents: 'none' } });
+                        const transparentRect = React.createElement('rect', { x: 0, y: 0, width: width, height: height, fill: "transparent" });
+
+                        switch(module.type) {
+                            case GearType.Gear: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(CylindricalGearUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                            case GearType.Belt: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(BeltDriveUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                            case GearType.Chain: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(ChainDriveUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                            case GearType.ToothedBelt: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(ToothedBeltDriveUGO, { width, height, ...ugoProps, strokeColor }))); break;
+                        }
                     }
                     updateBounds(ugoBbox);
                     getUgoSubBboxes(module.type, module.inputs).map(sub => transformLocalBboxToGlobal(sub, ugoTransform)).forEach(gSub => baseLayoutOccupiedSpaces.push({ ...gSub, ownerId: module.id }));
@@ -617,7 +633,7 @@ export const useSchemeLayout = ({
                     const width = UGO_PARALLEL_WIDTH;
                     const height = UGO_PARALLEL_HEIGHT;
                     const isLayoutInverted = module.layout === ParallelLayoutType.Inverted;
-                    let tx, ty, rot = 0;
+                    let tx: number, ty: number, rot: number = 0;
                     ugoTransform = { translateX: 0, translateY: 0, rotation: 0, internalOffsetY: 0, rotationCenterX: width / 2, rotationCenterY: height / 2, width, height, scaleX: 1, scaleY: 1 };
                     const inputShaftYOffset = (isLayoutInverted) ? UGO_PARALLEL_SHAFT_Y1 + UGO_PARALLEL_SHAFT_DISTANCE : UGO_PARALLEL_SHAFT_Y1;
                     if (cursor.direction === 'right' || cursor.direction === 'left') {
@@ -680,7 +696,7 @@ export const useSchemeLayout = ({
                     const height = UGO_COAXIAL_TURNING_DIM;
                     const centerX = UGO_COAXIAL_TURNING_CENTER_XY;
                     const centerY = UGO_COAXIAL_TURNING_CENTER_XY;
-                    let tx, ty, rot = 0, scaleX = 1, scaleY = 1;
+                    let tx: number, ty: number, rot: number = 0, scaleX = 1, scaleY = 1;
                     const inDir = cursor.direction;
                     const outDir = isTurning ? (stage.turn || inDir) : inDir;
                     if (inDir === 'right') { tx = cursor.x; ty = cursor.y - centerY; } else if (inDir === 'left') { tx = cursor.x - width; ty = cursor.y - centerY; } else if (inDir === 'up') { tx = cursor.x - centerX; ty = cursor.y - height; } else { tx = cursor.x - centerX; ty = cursor.y; }
@@ -725,20 +741,51 @@ export const useSchemeLayout = ({
                 ugoDataForCallouts.push({ id: module.id, transform: ugoTransform, bbox: ugoBbox, type: module.type, u: module.u || 0, inputs: ugoProps, flowDirection });
                 const interactionData: SelectedUgoData = { module, stageIndex: elementIndex, inputDirection: flowDirection, currentTurn: stage.turn, isMultiModuleStage: false };
                 flatItems.push({ id: module.id, type: 'ugo', centerPoint: { x: ugoBbox.x + ugoBbox.width / 2, y: ugoBbox.y + ugoBbox.height / 2 }, data: interactionData });
-                let UgoComponent: React.FC<any> | null = null;
-                switch (module.type) {
-                    case GearType.Gear: UgoComponent = CylindricalGearUGO; break;
-                    case GearType.Belt: UgoComponent = BeltDriveUGO; break;
-                    case GearType.Chain: UgoComponent = ChainDriveUGO; break;
-                    case GearType.ToothedBelt: UgoComponent = ToothedBeltDriveUGO; break;
-                    case GearType.Planetary: UgoComponent = PlanetaryGearUGO; const { fixedShaft, zPlanet } = module; const planetaryInputs = inputs as PlanetaryInputParams; let configType = PlanetaryGearConfigType.FixedRing; if (fixedShaft === PlanetaryShaftType.Carrier) configType = PlanetaryGearConfigType.FixedCarrier; if (fixedShaft === PlanetaryShaftType.Sun) configType = PlanetaryGearConfigType.FixedSun; ugoProps.configType = configType; ugoProps.zSun = Number(inputs.zSun); ugoProps.zPlanet = zPlanet || 0; let isUgoMirrored = false; if (planetaryInputs.shaftConfig) { switch (planetaryInputs.shaftConfig) { case PlanetaryConfig.CarrierToSun: case PlanetaryConfig.RingToSun: case PlanetaryConfig.CarrierToRing: isUgoMirrored = true; break; } } ugoProps.mirrored = isUgoMirrored; break;
-                    case GearType.Worm: UgoComponent = WormDriveUGO; ugoProps.config = inputs.config; ugoProps.cuttingDirection = "right"; break;
-                    case GearType.Bevel: UgoComponent = BevelGearUGO; ugoProps.config = inputs.config; break;
-                }
+                
                 const handlers = createInteractionHandlers((e) => onUgoInteraction(interactionData, e));
                 const isSelected = selectedUgo?.module.id === module.id || (currentSelectedIndex !== null && flatInteractableItemsRef.current[currentSelectedIndex]?.id === module.id);
                 const isOverlapping = overlappingUgoIds.has(module.id);
-                if (UgoComponent) svgElements.push(React.createElement('g', { key: module.id, 'data-ugo-id': module.id, transform: transformString, ...handlers, style: { cursor: 'pointer' }, filter: isOverlapping ? "url(#overlap-glow)" : undefined }, isSelected && React.createElement('rect', { x: -10, y: -10, width: ugoTransform.width + 20, height: ugoTransform.height + 20, fill: "url(#radial-glow-gradient)", style: { pointerEvents: 'none' } }), React.createElement('rect', { x: 0, y: 0, width: ugoTransform.width, height: ugoTransform.height, fill: "transparent" }), React.createElement(UgoComponent, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps })));
+                
+                const ugoWrapperProps = { key: module.id, 'data-ugo-id': module.id, transform: transformString, ...handlers, style: { cursor: 'pointer' }, filter: isOverlapping ? "url(#overlap-glow)" : undefined };
+                const selectionRect = isSelected && React.createElement('rect', { x: -10, y: -10, width: ugoTransform.width + 20, height: ugoTransform.height + 20, fill: "url(#radial-glow-gradient)", style: { pointerEvents: 'none' } });
+                const transparentRect = React.createElement('rect', { x: 0, y: 0, width: ugoTransform.width, height: ugoTransform.height, fill: "transparent" });
+
+                switch (module.type) {
+                    case GearType.Gear: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(CylindricalGearUGO, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps }))); break;
+                    case GearType.Belt: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(BeltDriveUGO, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps }))); break;
+                    case GearType.Chain: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(ChainDriveUGO, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps }))); break;
+                    case GearType.ToothedBelt: svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(ToothedBeltDriveUGO, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps }))); break;
+                    case GearType.Planetary: {
+                        const { fixedShaft, zPlanet } = module; 
+                        const planetaryInputs = inputs as PlanetaryInputParams; 
+                        let configType = PlanetaryGearConfigType.FixedRing; 
+                        if (fixedShaft === PlanetaryShaftType.Carrier) configType = PlanetaryGearConfigType.FixedCarrier; 
+                        if (fixedShaft === PlanetaryShaftType.Sun) configType = PlanetaryGearConfigType.FixedSun; 
+                        ugoProps.configType = configType; 
+                        ugoProps.zSun = Number(inputs.zSun); 
+                        ugoProps.zPlanet = zPlanet || 0; 
+                        let isUgoMirrored = false; 
+                        if (planetaryInputs.shaftConfig) { 
+                            switch (planetaryInputs.shaftConfig) { 
+                                case PlanetaryConfig.CarrierToSun: 
+                                case PlanetaryConfig.RingToSun: 
+                                case PlanetaryConfig.CarrierToRing: isUgoMirrored = true; break; 
+                            } 
+                        } 
+                        ugoProps.mirrored = isUgoMirrored; 
+                        svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(PlanetaryGearUGO, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps }))); 
+                        break;
+                    }
+                    case GearType.Worm: 
+                        ugoProps.config = inputs.config; 
+                        ugoProps.cuttingDirection = "right"; 
+                        svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(WormDriveUGO, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps }))); 
+                        break;
+                    case GearType.Bevel: 
+                        ugoProps.config = inputs.config; 
+                        svgElements.push(React.createElement('g', ugoWrapperProps, selectionRect, transparentRect, React.createElement(BevelGearUGO, { width: ugoTransform.width, height: ugoTransform.height, ...ugoProps }))); 
+                        break;
+                }
             }
             if (isParallel) {
                 previousParallelLayout = selectedModule.layout || ParallelLayoutType.Standard;

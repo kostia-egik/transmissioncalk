@@ -51,7 +51,6 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
         zoomIn, 
         zoomOut, 
         fitToScreen,
-        setView,
         smoothPanTo,
         calculateCenterOnPoint
     } = usePanAndZoom({ 
@@ -335,22 +334,23 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                         onUpdateTurnDirection={(newDirection) => handleUpdateTurnDirection(selectedUgo.stageIndex, newDirection)}
                         inputDirection={selectedUgo.inputDirection}
                         currentTurnDirection={selectedUgo.currentTurn}
+                        isMultiModuleStage={selectedUgo.isMultiModuleStage}
+                        isCurrentActive={!('isSelected' in selectedUgo.module) || !selectedUgo.module.isSelected}
+                        onMakeActive={() => 'id' in selectedUgo.module && handleMakeModuleActive(selectedUgo.stageIndex, selectedUgo.module.id)}
+                        onGoToWorkbench={handleGoToWorkbench}
+                        moduleInDirection={('moduleInDirection' in selectedUgo.module) ? selectedUgo.module.moduleInDirection : undefined}
+                        moduleOutDirection={('moduleOutDirection' in selectedUgo.module) ? selectedUgo.module.moduleOutDirection : undefined}
+                        moduleInOrientation={('moduleInOrientation' in selectedUgo.module) ? selectedUgo.module.moduleInOrientation : undefined}
+                        moduleOutOrientation={('moduleOutOrientation' in selectedUgo.module) ? selectedUgo.module.moduleOutOrientation : undefined}
+                        // FIX: Added missing props to satisfy the UgoContextMenuProps interface.
                         onAddSpacer={(position) => handleAddSpacer(selectedUgo.stageIndex, position)}
                         currentIndex={currentSelectedIndex}
                         totalItems={flatInteractableItemsRef.current.length}
                         onNavigate={handleNavigation}
                         isMobileView={isMobileView}
-                        isMultiModuleStage={selectedUgo.isMultiModuleStage}
-                        isCurrentActive={'isSelected' in selectedUgo.module ? selectedUgo.module.isSelected : false}
-                        onMakeActive={() => 'id' in selectedUgo.module && handleMakeModuleActive(selectedUgo.stageIndex, selectedUgo.module.id)}
-                        onGoToWorkbench={handleGoToWorkbench}
-                        moduleInDirection={'moduleInDirection' in selectedUgo.module ? selectedUgo.module.moduleInDirection : undefined}
-                        moduleOutDirection={'moduleOutDirection' in selectedUgo.module ? selectedUgo.module.moduleOutDirection : undefined}
-                        moduleInOrientation={'moduleInOrientation' in selectedUgo.module ? selectedUgo.module.moduleInOrientation : undefined}
-                        moduleOutOrientation={'moduleOutOrientation' in selectedUgo.module ? selectedUgo.module.moduleOutOrientation : undefined}
                     />
                 )}
-                 {selectedSpacer && spacerMenuPosition && (
+                {selectedSpacer && spacerMenuPosition && (
                     <SpacerContextMenu
                         spacer={selectedSpacer}
                         position={spacerMenuPosition}
@@ -362,7 +362,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                         onNavigate={handleNavigation}
                         isMobileView={isMobileView}
                     />
-                 )}
+                )}
             </div>
         </div>
     );
