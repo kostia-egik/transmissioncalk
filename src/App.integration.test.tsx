@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+// FIX: Removed explicit `expect` import to rely on the globally extended version from `setupTests.ts`.
+import { describe, it } from 'vitest';
 import App from './App';
 
 describe('Интеграция компонента App', () => {

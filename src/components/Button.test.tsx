@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+// FIX: Removed explicit `expect` import to rely on the globally extended version from `setupTests.ts`.
+import { describe, it, vi } from 'vitest';
 import Button from './Button';
 
 describe('Компонент Button', () => {
