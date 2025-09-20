@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-// FIX: Removed explicit `expect` import to rely on the globally extended version from `setupTests.ts`.
-import { describe, it, vi } from 'vitest';
+// FIX: Import `expect` from `vitest` to resolve 'Cannot find name' errors.
+import { describe, it, vi, expect } from 'vitest';
 import Button from './Button';
 
 describe('Компонент Button', () => {
