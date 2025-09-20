@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     ModuleCalculationData, GearType, GearInputParams, ChainInputParams, PlanetaryInputParams, CascadeValues, RotationDirection,
     ToothedBeltInputParams, BeltInputParams, BevelGearInputParams, WormGearInputParams, ShaftOrientation, PlanetaryConfig, PlanetaryGearConfigType,
@@ -290,7 +290,6 @@ const BevelGearModuleDisplay: React.FC<ModuleDisplayProps> = ({ moduleData, stag
                     z1={Number(inputs.z1) || 15}
                     z2={Number(inputs.z2) || 30}
                     config={opt.value}
-                    placement={BevelGearPlacement.LeftBottom}
                 />
             </div>
         )

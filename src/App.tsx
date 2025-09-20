@@ -203,7 +203,6 @@ const App: React.FC = () => {
   const [initialSchemeElements, setInitialSchemeElements] = useState<SchemeElement[]>([]);
   const [calculationDataSnapshot, setCalculationDataSnapshot] = useState<string | null>(null);
 
-  const [globalError, setGlobalError] = useState<string | null>(null);
   const finalResultsRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
@@ -307,11 +306,9 @@ const App: React.FC = () => {
     });
 
     if (error) {
-        setGlobalError(error);
         showNotification(error, 'error');
         setFinalResults(null);
     } else {
-        setGlobalError(null);
         if (results) {
             showNotification('Итоговые параметры обновлены!', 'success');
         }
@@ -344,7 +341,6 @@ const App: React.FC = () => {
     const isAnyModuleConfigured = calculationData.some(stage => stage.modules.some(m => m.isSelected && m.type));
     if (!isAnyModuleConfigured) {
       const errorMsg = "Необходимо сконфигурировать хотя бы один модуль (выбрать тип передачи).";
-      setGlobalError(errorMsg);
       showNotification(errorMsg, 'error');
       setShowFinalResults(true);
       return;
@@ -401,7 +397,6 @@ const App: React.FC = () => {
     setShowFinalResults(false);
     setSchemeElements([]);
     setCalculationDataSnapshot(null);
-    setGlobalError(null);
     showNotification('Конфигурация передач сброшена к значениям по умолчанию.', 'success');
   }, [showNotification]);
 
@@ -441,7 +436,6 @@ const App: React.FC = () => {
             console.error("Save failed:", error);
             const message = error instanceof Error ? error.message : String(error);
             showNotification(`Ошибка сохранения: ${message}`, 'error');
-            setGlobalError(`Ошибка сохранения: ${message}`);
         }
     }, [engineParams, calculationData, schemeElements, showNotification]);
 
@@ -477,7 +471,6 @@ const App: React.FC = () => {
                 console.error("Load failed:", error);
                 const message = error instanceof Error ? error.message : String(error);
                 showNotification(`Ошибка загрузки: ${message}`, 'error');
-                setGlobalError(`Ошибка загрузки: ${message}`);
             } finally {
                 if (event.target) {
                     event.target.value = "";
@@ -487,7 +480,6 @@ const App: React.FC = () => {
         reader.onerror = () => {
             const errorMsg = 'Не удалось прочитать файл.';
             showNotification(errorMsg, 'error');
-            setGlobalError(errorMsg);
         };
         reader.readAsText(file);
     }, [handleCalculationDataChange, showNotification]);
@@ -581,7 +573,6 @@ const App: React.FC = () => {
               calculationDataSnapshot={calculationDataSnapshot}
               showNotification={showNotification}
               finalResultsRef={finalResultsRef}
-              setGlobalError={setGlobalError}
               resetEngineParams={handleResetEngineParams}
               onResetConfiguration={handleResetConfiguration}
               scrollToModuleId={scrollToModuleId}

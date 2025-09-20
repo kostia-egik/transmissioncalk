@@ -79,7 +79,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
         setWarningDismissed
     } = useSchemeInteraction({
         containerRef,
-        setView,
+        // FIX: Removed 'setView' property as it does not exist in 'UseSchemeInteractionProps'.
         smoothPanTo,
         calculateCenterOnPoint,
         flatInteractableItemsRef,

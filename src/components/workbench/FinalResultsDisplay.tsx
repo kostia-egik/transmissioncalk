@@ -4,7 +4,6 @@ import { getRotationIconPath } from '../../constants';
 
 interface FinalResultsDisplayProps {
   results: FinalCalculationResults;
-  // FIX: refProp is no longer needed as the parent component provides the ref and container.
 }
 
 export const FinalResultsDisplay: React.FC<FinalResultsDisplayProps> = ({ results }) => {
@@ -16,8 +15,6 @@ export const FinalResultsDisplay: React.FC<FinalResultsDisplayProps> = ({ result
     }
 
     return (
-        // FIX: Removed the outer wrapper div to avoid duplication with the parent component.
-        // The parent component in WorkbenchPage.tsx already creates the styled container and attaches the ref.
         <>
             <h2 className="text-2xl font-bold text-slate-800 mb-6 ">Итоговые параметры трансмиссии</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">

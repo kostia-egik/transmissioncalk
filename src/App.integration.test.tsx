@@ -24,7 +24,8 @@ describe('Интеграция компонента App', () => {
     
     // Ищем текст "Выходной крутящий момент, Нм:" и проверяем, что рядом есть "294.00"
     // Используем `findByText` чтобы дождаться асинхронного обновления DOM
-    const torqueOutput = await screen.findByText((content, element) => {
+    const torqueOutput = await screen.findByText((_content, element) => {
+        if (!element) return false;
         const hasText = (node: Element) => node.textContent === 'Выходной крутящий момент, Нм:';
         const elementHasText = hasText(element);
         const childrenDontHaveText = Array.from(element.children).every(

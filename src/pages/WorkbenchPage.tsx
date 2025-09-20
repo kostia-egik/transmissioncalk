@@ -1,10 +1,10 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { EngineParams, StageCalculationData, FinalCalculationResults, RotationDirection, ShaftOrientation, GearType } from '../types';
+import { EngineParams, StageCalculationData, FinalCalculationResults, ShaftOrientation, GearType } from '../types';
 import Button from '../components/Button';
 import { getRotationIconPath } from '../constants';
 import { Tooltip } from '../components/Tooltip';
-import { TooltipContent, TOOLTIP_DATA } from '../tooltip-data';
+import { TooltipContent } from '../tooltip-data';
 import { getGearCategory } from '../utils/gear';
 import { EngineParamsEditor } from '../components/workbench/EngineParamsEditor';
 import { StageEditor } from '../components/workbench/StageEditor';
@@ -26,7 +26,6 @@ interface WorkbenchPageProps {
   calculationDataSnapshot: string | null;
   showNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
   finalResultsRef: React.Ref<HTMLDivElement>;
-  setGlobalError: (error: string | null) => void;
   scrollToModuleId: string | null;
   onScrollComplete: () => void;
 }
@@ -34,7 +33,7 @@ interface WorkbenchPageProps {
 const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
   engineParams, setEngineParams, resetEngineParams, calculationData, onCalculationDataChange,
   onResetConfiguration, finalResults, showFinalResults, isSchemeBuilt, onBuildNewScheme, onGoToSchemeView, 
-  calculationDataSnapshot, showNotification, finalResultsRef, setGlobalError, scrollToModuleId, onScrollComplete
+  calculationDataSnapshot, showNotification, finalResultsRef, scrollToModuleId, onScrollComplete
 }) => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showChangesDialog, setShowChangesDialog] = useState(false);
@@ -90,8 +89,7 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
         setEngineParams(newParams);
         onCalculationDataChange(calculationData); // Trigger recalculation
         setErrors(prev => ({ ...prev, [name]: '' }));
-        setGlobalError(null);
-    }, [engineParams, setEngineParams, onCalculationDataChange, calculationData, setGlobalError]);
+    }, [engineParams, setEngineParams, onCalculationDataChange, calculationData]);
 
     const addStage = useCallback((index?: number) => {
         const stageId = `stage-${Date.now()}-${Math.random()}`;
@@ -163,7 +161,7 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
                 id="engine-params-card"
                 engineParams={engineParams}
                 handleParamChange={handleParamChange}
-                resetEngineParams={() => { resetEngineParams(); setGlobalError(null); setErrors({}); }}
+                resetEngineParams={() => { resetEngineParams(); setErrors({}); }}
                 rotationIconPath={rotationIconPath}
                 rotationIconAltText={rotationIconAltText}
                 errors={errors}
