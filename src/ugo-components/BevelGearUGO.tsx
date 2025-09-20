@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BevelGearConfigType, BevelGearPlacement } from '../types';
+import { BevelGearConfigType } from '../types';
 
 interface BevelGearUGOProps {
   width: number;
@@ -8,7 +8,6 @@ interface BevelGearUGOProps {
   z1: number;
   z2: number;
   config: BevelGearConfigType; 
-  placement?: BevelGearPlacement;
 }
 
 export const BevelGearUGO: React.FC<BevelGearUGOProps> = ({
@@ -17,7 +16,6 @@ export const BevelGearUGO: React.FC<BevelGearUGOProps> = ({
   z1,
   z2,
   config,
-  placement = BevelGearPlacement.LeftBottom, // Оставлено для обратной совместимости, но не влияет на текст
 }) => {
   const STROKE_COLOR = '#0F0F0F';
   const SHAFT_STROKE_WIDTH = 2;

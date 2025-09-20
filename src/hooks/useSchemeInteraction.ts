@@ -4,7 +4,6 @@ import { SelectedUgoData } from './useSchemeLayout';
 
 interface UseSchemeInteractionProps {
     containerRef: React.RefObject<HTMLDivElement>;
-    setView: (view: any) => void;
     smoothPanTo: (x: number, y: number) => void;
     calculateCenterOnPoint: (x: number, y: number) => { x: number, y: number };
     flatInteractableItemsRef: React.MutableRefObject<any[]>;
@@ -14,7 +13,6 @@ interface UseSchemeInteractionProps {
 
 export const useSchemeInteraction = ({
     containerRef,
-    setView,
     smoothPanTo,
     calculateCenterOnPoint,
     flatInteractableItemsRef,

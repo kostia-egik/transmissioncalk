@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+// FIX: Import `expect` from `vitest` to resolve 'Cannot find name' errors.
+import { describe, it, vi, expect } from 'vitest';
 import Button from './Button';
 
 describe('Компонент Button', () => {

@@ -105,7 +105,7 @@ const InputWithControls: React.FC<InputWithControlsProps> = ({
     handlePressStart(action);
   };
 
-  const handleMouseDownWrapper = (e: React.MouseEvent, action: 'increment' | 'decrement') => {
+  const handleMouseDownWrapper = (_e: React.MouseEvent, action: 'increment' | 'decrement') => {
     if (isTouchHandled.current) {
       return;
     }

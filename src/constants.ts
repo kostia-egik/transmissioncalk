@@ -1,4 +1,4 @@
-import { EngineParams, RotationDirection, StageSetup, GearType, PlanetaryShaftType, ShaftOrientation } from './types';
+import { EngineParams, RotationDirection, StageSetup, GearType, ShaftOrientation } from './types';
 
 export const DEFAULT_ENGINE_PARAMS: EngineParams = {
   initialTorque: 100,

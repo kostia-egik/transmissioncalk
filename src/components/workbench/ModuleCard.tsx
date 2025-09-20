@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     ModuleCalculationData, GearType, GearInputParams, ChainInputParams, PlanetaryInputParams, CascadeValues, RotationDirection,
     ToothedBeltInputParams, BeltInputParams, BevelGearInputParams, WormGearInputParams, ShaftOrientation, PlanetaryConfig, PlanetaryGearConfigType,
-    AVAILABLE_GEAR_TYPES, BevelGearPlacement, PLANETARY_CONFIG_MAP, PLANETARY_SHAFT_OPTIONS, PLANETARY_CONFIG_OPTIONS, BEVEL_GEAR_CONFIG_OPTIONS, WORM_GEAR_CONFIG_OPTIONS,
+    AVAILABLE_GEAR_TYPES, PLANETARY_CONFIG_MAP, PLANETARY_SHAFT_OPTIONS, PLANETARY_CONFIG_OPTIONS, BEVEL_GEAR_CONFIG_OPTIONS, WORM_GEAR_CONFIG_OPTIONS,
     ModuleSpecificInputs
 } from '../../types';
 import Select from '../Select';
@@ -290,7 +290,6 @@ const BevelGearModuleDisplay: React.FC<ModuleDisplayProps> = ({ moduleData, stag
                     z1={Number(inputs.z1) || 15}
                     z2={Number(inputs.z2) || 30}
                     config={opt.value}
-                    placement={BevelGearPlacement.LeftBottom}
                 />
             </div>
         )
