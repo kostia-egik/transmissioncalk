@@ -1,8 +1,7 @@
 
 
+
 import React, { useState } from 'react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { EngineParams, FinalCalculationResults, ModuleCalculationData, SchemeElement, StageCalculationData } from '../types';
 import { calculateCascade } from '../services/calculationService';
 import Button from './Button';
@@ -42,6 +41,7 @@ const handleExportSVG = async (svgContainer: HTMLElement) => {
 
 const handleExportPNG = async (svgContainer: HTMLElement) => {
     try {
+        const { default: html2canvas } = await import('html2canvas');
         const canvas = await html2canvas(svgContainer, {
             backgroundColor: '#ffffff',
             scale: 2, // Increase resolution for better quality
@@ -153,6 +153,8 @@ const handleExportPDF = async (
     calculationData: StageCalculationData[],
     finalResults: FinalCalculationResults | null
 ) => {
+    const { jsPDF } = await import('jspdf');
+    const { default: html2canvas } = await import('html2canvas');
     const doc = new jsPDF({ orientation: 'l', unit: 'px', format: 'a4' });
     const pdfWidth = doc.internal.pageSize.getWidth();
     const pdfHeight = doc.internal.pageSize.getHeight();
