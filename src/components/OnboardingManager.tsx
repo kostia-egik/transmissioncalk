@@ -117,9 +117,79 @@ async function openDetailsIfCollapsed(contentEl: HTMLElement) {
   }
 }
 
+// --- Tour Helper Functions (Rail & Dock Strategy) ---
+
+function getScrollParent(node: HTMLElement | null): HTMLElement | Window {
+  let cur = node;
+  while (cur && cur !== document.body) {
+    const s = getComputedStyle(cur);
+    const overflowY = s.overflowY;
+    if (/(auto|scroll|overlay)/.test(overflowY) && cur.scrollHeight > cur.clientHeight) return cur;
+    cur = cur.parentElement;
+  }
+  return window;
+}
+
+function computeRail(): number {
+  const h = window.innerHeight || 800;
+  return Math.max(180, Math.min(Math.round(h * 0.38), 320));
+}
+
+function enableMobileRail() {
+  if (window.innerWidth > 768) return;
+  document.body.classList.add('tour-rail');
+  document.documentElement.style.setProperty('--tour-rail', computeRail() + 'px');
+}
+
+function disableMobileRail() {
+  document.body.classList.remove('tour-rail');
+}
+
+function ensureSpaceForTooltip(target: HTMLElement, prefer: 'bottom' | 'top' = 'bottom', stickyHeaderPx = 0) {
+  if (!target) return;
+  const rail = computeRail();
+  const scrollEl = getScrollParent(target);
+  const rect = target.getBoundingClientRect();
+  const viewportH = scrollEl === window ? window.innerHeight : (scrollEl as HTMLElement).getBoundingClientRect().height;
+  const buffer = rail + 16; 
+
+  let delta = 0;
+  if (prefer === 'bottom') {
+    const roomBelow = viewportH - rect.bottom - stickyHeaderPx;
+    if (roomBelow < buffer) delta = buffer - roomBelow;
+  } else {
+    const roomAbove = rect.top - stickyHeaderPx;
+    if (roomAbove < buffer) delta = -(buffer - roomAbove);
+  }
+
+  if (delta !== 0) {
+    if (scrollEl === window) window.scrollBy({ top: delta, behavior: 'auto' });
+    else (scrollEl as HTMLElement).scrollTop += delta;
+  }
+}
+
+function getStickyHeaderHeight(): number {
+    const header = document.querySelector('header');
+    if (header && getComputedStyle(header).position === 'sticky') {
+      return header.getBoundingClientRect().height;
+    }
+    return 0;
+}
+
+// Unconditionally docks the tooltip on mobile.
+function forceDockTooltipOnMobile(tooltipEl: Element | null) {
+  if (!tooltipEl) return;
+  if (window.innerWidth <= 768) {
+    tooltipEl.classList.add('tour-docked');
+  } else {
+    tooltipEl.classList.remove('tour-docked');
+  }
+}
+
 
 const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTourTrigger }) => {
   const tourInstanceRef = useRef<any>(null);
+  const observerRef = useRef<MutationObserver | null>(null);
 
   useEffect(() => {
     if (startTourTrigger === 0) {
@@ -134,6 +204,20 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
     if (localStorage.getItem(tourLocalStorageKey) === 'true') {
         return;
     }
+
+    const cleanupObserver = () => {
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+            observerRef.current = null;
+        }
+    };
+
+    const handleResize = () => {
+        if (document.body.classList.contains('tour-rail')) {
+            document.documentElement.style.setProperty('--tour-rail', computeRail() + 'px');
+        }
+    };
+    window.addEventListener('resize', handleResize);
     
     const intro = introJs();
     tourInstanceRef.current = intro;
@@ -205,17 +289,18 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
             position: isMobile ? 'top' : 'left',
         },
         {
-            element: '[data-ugo-id]:not([data-ugo-id="power-source"])',
+            element: '[data-ugo-id="power-source"]',
             title: '2. Взаимодействие с элементами',
-            intro: 'Клик по элементу схемы открывает его контекстное меню.',
+            intro: 'Клик по любому элементу схемы, например, по этому источнику, открывает его контекстное меню.',
             position: isMobile ? 'top' : 'right',
         },
         {
             element: '#ugo-context-menu',
             title: '3. Контекстное меню',
-            intro: 'В меню можно инвертировать компоновку, добавить вал-проставку для раздвижки элементов или быстро перейти к параметрам на "Рабочем столе".',
+            intro: 'В меню можно посмотреть информацию об элементе, добавить вал-проставку или быстро перейти к параметрам на "Рабочем столе".',
             position: 'left',
             tooltipClass: 'context-menu-tooltip',
+            scrollToElement: false,
         },
         {
             element: '#scheme-header-controls',
@@ -253,6 +338,13 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
     });
     
     intro.onbeforechange(async function (this: any, nextEl: HTMLElement) {
+        cleanupObserver();
+        enableMobileRail();
+        
+        // Cleanup menu class from previous step
+        const menu = document.getElementById('ugo-context-menu');
+        if (menu) menu.classList.remove('tour-lift-up');
+
         const isWorkbench = tourKey === 'workbench';
         const isScheme = tourKey === 'scheme';
 
@@ -276,6 +368,24 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
             }
         }
 
+        // --- Scheme Tour Specific Logic: Open Context Menu ---
+        if (isScheme) {
+            const nextStepIndex = this._currentStep + 1;
+            const nextStep = this._options.steps[nextStepIndex];
+            // If the NEXT step is highlighting the context menu...
+            if (nextStep?.element === '#ugo-context-menu') {
+                const currentStepElement = this._introItems[this._currentStep]?.element;
+                if (currentStepElement && !document.getElementById('ugo-context-menu')) {
+                    setTimeout(() => simulateReactClick(currentStepElement), 150);
+                    // FIX: The predicate for waitFor must return a boolean. `document.getElementById` returns `HTMLElement | null`. Coercing to boolean.
+                    await waitFor(() => !!document.getElementById('ugo-context-menu'), 1500, 40);
+                    
+                    await wait(350); 
+                    this.refresh();
+                }
+            }
+        }
+
         const isFinalResultsStep = tourKey === 'workbench' && (this._options?.steps?.[this._currentStep]?.element === '#final-results-card' || this._currentStep === 6);
         if (isFinalResultsStep) {
             await waitFor(() => {
@@ -293,21 +403,6 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
                 this.refresh();
                 await wait(50);
                 this.refresh();
-            }
-        }
-
-        const isUgoStep = isScheme && this._options?.steps?.[this._currentStep]?.element?.startsWith('[data-ugo-id');
-        if (isUgoStep) {
-            // This logic now runs BEFORE the UGO step is shown.
-            // It performs the click and waits for the animation, so the highlight appears on a stable element.
-            const ugo = nextEl?.matches('[data-ugo-id]:not([data-ugo-id="power-source"])') 
-                ? nextEl 
-                : document.querySelector('[data-ugo-id]:not([data-ugo-id="power-source"])');
-            
-            if (ugo && !document.getElementById('ugo-context-menu')) {
-                 setTimeout(() => simulateReactClick(ugo), 150); // Small delay to let the previous step disappear
-                 await wait(500); // Wait for pan animation (300ms) + buffer
-                 this.refresh(); // Recalculate position before showing
             }
         }
         
@@ -332,12 +427,53 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
                 this.refresh();
             }
         }
+        
+        // Wait for any animations (like smooth pan) to finish before redrawing highlight
+        if (tourKey === 'scheme') {
+            await wait(350);
+        }
     });
 
     intro.onafterchange(function (this: any, targetEl: HTMLElement) {
+        const isMobile = window.innerWidth <= 768;
+
+        if (isMobile) {
+            ensureSpaceForTooltip(targetEl, 'bottom', getStickyHeaderHeight());
+            
+            // The tooltip element might not be available immediately.
+            const tooltip = this._tooltipEl || document.querySelector('.introjs-tooltip');
+
+            if (tooltip) {
+                forceDockTooltipOnMobile(tooltip);
+                observerRef.current = new MutationObserver((mutations) => {
+                    for (const mutation of mutations) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                            requestAnimationFrame(() => {
+                                forceDockTooltipOnMobile(mutation.target as HTMLElement);
+                            });
+                        }
+                    }
+                });
+                observerRef.current.observe(tooltip, { attributes: true, attributeFilter: ['style'] });
+            }
+        }
+
         const isWorkbench = tourKey === 'workbench';
+        const isScheme = tourKey === 'scheme';
         const currentStepIndex = this._currentStep;
 
+        // --- SCHEME TOUR: LIFT MENU ---
+        if (isScheme && isMobile) {
+            const currentStep = this._options.steps[currentStepIndex];
+            if (currentStep?.element === '#ugo-context-menu') {
+                const openedMenu = document.getElementById('ugo-context-menu');
+                if (openedMenu) {
+                    openedMenu.classList.add('tour-lift-up');
+                }
+            }
+        }
+
+        // --- WORKBENCH TOUR: SIMULATE INPUT ---
         if (isWorkbench && currentStepIndex === 4 && targetEl.id === 'stage-0-module-0-default') {
             setTimeout(() => {
                 const z1Input = document.getElementById(`${targetEl.id}-z1`) as HTMLInputElement | null;
@@ -350,6 +486,11 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
     });
     
     const onTourEnd = () => {
+      cleanupObserver();
+      disableMobileRail();
+      const menu = document.getElementById('ugo-context-menu');
+      if (menu) menu.classList.remove('tour-lift-up');
+
       if ((intro as any)._dontShowAgain) {
         localStorage.setItem(tourLocalStorageKey, 'true');
       }
@@ -361,6 +502,9 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
 
     return () => {
       clearTimeout(timer);
+      cleanupObserver();
+      window.removeEventListener('resize', handleResize);
+      disableMobileRail();
       if (tourInstanceRef.current && tourInstanceRef.current._currentStep) {
           tourInstanceRef.current.exit();
       }

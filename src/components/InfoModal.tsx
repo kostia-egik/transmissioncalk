@@ -110,6 +110,23 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, defaultTa
                  {activeTab === 'guide' && (
                     <section>
                         <h3 className="text-lg font-semibold text-gray-700 mb-4">Руководство пользователя</h3>
+                        <div className="mb-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                            <h4 className="text-base font-semibold text-gray-700 text-center">Хотите пройти интерактивное обучение заново?</h4>
+                            <div className="mt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+                                <button 
+                                    onClick={onStartWorkbenchTour}
+                                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-colors w-full sm:w-auto"
+                                >
+                                    Запустить тур по "Рабочему столу"
+                                </button>
+                                <button 
+                                    onClick={onStartSchemeTour}
+                                    className="px-4 py-2 bg-slate-700 text-white font-semibold rounded-lg shadow-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-opacity-75 transition-colors w-full sm:w-auto"
+                                >
+                                    Запустить тур по "Сборщику схем"
+                                </button>
+                            </div>
+                        </div>
                         <div className="space-y-6 text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none">
                             <div>
                                 <h4>Введение</h4>
@@ -173,23 +190,6 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, defaultTa
                                     <li><strong>Экспорт в CSV:</strong> Выгружает все расчетные данные в формате таблицы, которую можно открыть в Excel или Google Sheets для дальнейшего анализа.</li>
                                      <li><strong>Экспорт в SVG/PNG:</strong> Сохраняет только изображение кинематической схемы в векторном (SVG) или растровом (PNG) формате. Удобно для вставки в презентации или другие документы.</li>
                                 </ul>
-                            </div>
-                        </div>
-                        <div className="mt-8 pt-6 border-t border-gray-200">
-                            <h4 className="text-base font-semibold text-gray-700 text-center">Хотите пройти интерактивное обучение заново?</h4>
-                            <div className="mt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
-                                <button 
-                                    onClick={onStartWorkbenchTour}
-                                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-colors w-full sm:w-auto"
-                                >
-                                    Запустить тур по "Рабочему столу"
-                                </button>
-                                <button 
-                                    onClick={onStartSchemeTour}
-                                    className="px-4 py-2 bg-slate-700 text-white font-semibold rounded-lg shadow-md hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-opacity-75 transition-colors w-full sm:w-auto"
-                                >
-                                    Запустить тур по "Сборщику схем"
-                                </button>
                             </div>
                         </div>
                     </section>
