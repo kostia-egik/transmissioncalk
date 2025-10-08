@@ -170,7 +170,7 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
   const onMouseUpOrLeave = () => { isPanning.current = false; };
   const onTouchEnd = () => { isPanning.current = false; lastTouchDistance.current = null; };
 
-  const onWheel = (e: WheelEvent) => {
+  const onWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     if (!containerRef.current) return;
     if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
@@ -189,7 +189,21 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
       x: e.clientX - containerRect.left - pointX * newScale,
       y: e.clientY - containerRect.top - pointY * newScale,
     });
-  };
+  }, [view, minScale]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    
+    // Type assertion because we are attaching a wheel event
+    const wheelHandler = (e: Event) => onWheel(e as unknown as WheelEvent);
+
+    container.addEventListener('wheel', wheelHandler, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', wheelHandler);
+    };
+  }, [onWheel]);
 
   const zoom = (direction: 'in' | 'out') => {
     if (!containerRef.current) return;
@@ -246,9 +260,10 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
     
     const isMobileView = containerWidth <= 1024;
     const HORIZONTAL_OFFSET_FACTOR = isMobileView ? 0.5 : 0.35; // Центрируем на мобильных, 35% на десктопе
+    const VERTICAL_OFFSET_FACTOR = isMobileView ? 0.1 : 0.5; // Смещаем вверх на мобильных, 50% на десктопе
 
     const newX = (containerWidth * HORIZONTAL_OFFSET_FACTOR) - (pointX * view.scale);
-    const newY = (containerHeight / 2) - (pointY * view.scale); // Всегда центрируем по вертикали
+    const newY = (containerHeight * VERTICAL_OFFSET_FACTOR) - (pointY * view.scale);
     return { x: newX, y: newY };
   }, [view.scale]);
 
@@ -266,7 +281,7 @@ export const usePanAndZoom = ({ contentWidth, contentHeight }: PanAndZoomOptions
     transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
     panHandlers: {
       onMouseDown, onTouchStart, onMouseMove, onTouchMove, onMouseUp: onMouseUpOrLeave,
-      onMouseLeave: onMouseUpOrLeave, onTouchEnd, onWheel,
+      onMouseLeave: onMouseUpOrLeave, onTouchEnd
     },
     zoomIn, zoomOut, fitToScreen, centerOnPoint,
     calculateCenterOnPoint,
