@@ -34,17 +34,15 @@ jobs:
           # Робот "запоминает" адрес вашего репозитория от AI
           git remote add upstream https://github.com/kostia-egik/transmissioncalk-aistudio.git
           
+          # Робот сначала забирает последние изменения из СВОЕГО ЖЕ рабочего репозитория, на всякий случай
+          git pull origin main
+          
           # Робот скачивает все из репозитория от AI
           git fetch upstream
           
-          # Робот смешивает код, отдавая предпочтение версии от AI при конфликтах
-          git merge -X theirs upstream/main --allow-unrelated-histories -m "Автоматическая синхронизация из AI Studio"
-
-          # Эта команда отменяет изменения для указанных файлов, которые пришли из репозитория AI
-          git checkout HEAD -- README.md favicon.png
+          # Робот пытается сделать обычное слияние. Git сам разберется с README и иконкой благодаря .gitattributes
+          # Мы добавляем "-X theirs", чтобы в остальных файлах при конфликте выбиралась версия от AI
+          git merge -m "Автоматическая синхронизация из AI Studio" -X theirs upstream/main --allow-unrelated-histories
           
-          # Робот сначала забирает последние изменения из рабочего репозитория
-          git pull origin main --rebase
-          
-          # И только потом отправляет объединенный результат обратно
+          # Робот отправляет финальный результат обратно
           git push origin main
