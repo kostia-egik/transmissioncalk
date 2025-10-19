@@ -1,6 +1,7 @@
+README.md merge=ours
+favicon.png merge=ours
 *.png binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
-README.md merge=ours
-favicon.png merge=ours
+
