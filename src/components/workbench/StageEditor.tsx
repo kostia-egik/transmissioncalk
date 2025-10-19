@@ -149,6 +149,9 @@ export const StageEditor: React.FC<StageEditorProps> = React.memo(({
     const removeStage = useCallback((sIndex: number) => {
         const newData = calculationData.filter((_, i) => i !== sIndex)
             .map((s, i) => ({ ...s, stageName: `Валы ${i + 1} и ${i + 2}` }));
+        if (newData.length === 0) {
+            localStorage.removeItem('autosave-transmission-project');
+        }
         onCalculationDataChange(newData);
     }, [calculationData, onCalculationDataChange]);
 

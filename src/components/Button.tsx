@@ -3,7 +3,9 @@ import React from 'react';
 interface ButtonProps {
   // FIX: Add optional id prop to allow passing an ID to the button.
   id?: string;
-  onClick: React.MouseEventHandler<HTMLButtonElement>;
+  // FIX: Make onClick optional and add type prop to support form submission.
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  type?: 'button' | 'submit' | 'reset';
   children: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'danger' | 'warning';
   className?: string;
@@ -11,7 +13,7 @@ interface ButtonProps {
   title?: string; // Added title prop
 }
 
-const Button: React.FC<ButtonProps> = ({ id, onClick, children, variant = 'primary', className = '', disabled = false, title }) => {
+const Button: React.FC<ButtonProps> = ({ id, onClick, children, variant = 'primary', className = '', disabled = false, title, type = 'button' }) => {
   let baseStyle = "px-6 py-2 rounded-md font-semibold shadow-md focus:outline-none focus:ring-2 focus:ring-opacity-75 transition-colors duration-200";
   
   if (disabled) {
@@ -34,7 +36,7 @@ const Button: React.FC<ButtonProps> = ({ id, onClick, children, variant = 'prima
   }
 
   return (
-    <button id={id} onClick={onClick} className={`${baseStyle} ${className}`} disabled={disabled} title={title}>
+    <button id={id} type={type} onClick={onClick} className={`${baseStyle} ${className}`} disabled={disabled} title={title}>
       {children}
     </button>
   );

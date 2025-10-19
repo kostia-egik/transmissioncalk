@@ -3,6 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import App from './App';
 
+// FIX: Import vitest-specific matchers from jest-dom to extend vitest's `expect` and fix TypeScript errors.
+import '@testing-library/jest-dom/vitest';
+
 describe('Интеграция компонента App', () => {
   it('должен пересчитывать итоговые результаты при изменении параметров ступени', async () => {
     render(<App />);
