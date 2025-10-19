@@ -370,3 +370,22 @@ export interface SpacerShaft {
 }
 
 export type SchemeElement = (Partial<StageCalculationData> & { turn?: 'up' | 'down' | 'left' | 'right', comment?: string }) | SpacerShaft;
+
+// --- Project Saving Types ---
+
+export interface ProjectData {
+  engineParams: EngineParams;
+  calculationData: StageCalculationData[];
+  schemeElements: SchemeElement[];
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  lastModified: number;
+  meta: {
+    appName: 'transmission-calculator';
+    appVersion: string;
+  };
+  data: ProjectData;
+}

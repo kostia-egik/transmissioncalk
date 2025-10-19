@@ -1,10 +1,9 @@
-
-
-
-import React, { useState } from 'react';
-import { EngineParams, FinalCalculationResults, ModuleCalculationData, SchemeElement, StageCalculationData } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { EngineParams, FinalCalculationResults, ModuleCalculationData, SchemeElement, StageCalculationData, Project } from '../types';
 import { calculateCascade } from '../services/calculationService';
 import Button from './Button';
+import Input from './Input';
+import { EditIcon } from '../assets/icons/EditIcon';
 
 const getTimestamp = () => {
   const now = new Date();
@@ -319,8 +318,15 @@ const isStageCalculationData = (el: SchemeElement): el is StageCalculationData =
 interface ProjectActionsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
-  onLoadClick: () => void;
+  onSaveToFile: () => void;
+  onLoadFromFileClick: () => void;
+  onSaveLocal: (idToUpdate?: string, newName?: string) => Promise<void>;
+  onLoadLocal: (id: string) => Promise<void>;
+  onDeleteLocal: (id: string) => Promise<void>;
+  onNewProject: () => void;
+  currentProject: Project | null;
+  localProjects: Project[];
+  isDirty: boolean;
   context: 'workbench' | 'scheme';
   svgContainerRef?: React.RefObject<HTMLDivElement>;
   schemeElements: SchemeElement[];
@@ -328,18 +334,55 @@ interface ProjectActionsModalProps {
   engineParams: EngineParams;
 }
 
-export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({ isOpen, onClose, onSave, onLoadClick, context, svgContainerRef, schemeElements, calculationData, engineParams }) => {
+export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({ 
+    isOpen, onClose, onSaveToFile, onLoadFromFileClick, onSaveLocal, onLoadLocal, onDeleteLocal, onNewProject,
+    currentProject, localProjects, isDirty,
+    context, svgContainerRef, schemeElements, calculationData, engineParams 
+}) => {
   const [activeTab, setActiveTab] = useState('project');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [projectNameInput, setProjectNameInput] = useState('');
+  const [renamingState, setRenamingState] = useState<{ id: string; name: string } | null>(null);
+
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const mouseDownOnBackdrop = useRef(false);
+
+  const handleBackdropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === backdropRef.current) {
+        mouseDownOnBackdrop.current = true;
+    }
+  };
+
+  const handleBackdropMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (mouseDownOnBackdrop.current && e.target === backdropRef.current) {
+        onClose();
+    }
+    mouseDownOnBackdrop.current = false;
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+        setProjectNameInput(currentProject?.name || '');
+        // Сброс состояния при открытии
+        setActiveTab('project');
+        setRenamingState(null);
+    }
+  }, [isOpen, currentProject]);
 
   if (!isOpen) return null;
+
+  const handleSaveAsNew = () => { onSaveLocal(undefined, projectNameInput); };
+  const handleUpdateCurrent = () => { if (currentProject) { onSaveLocal(currentProject.id, projectNameInput); } };
+
+  const handleStartRename = (project: Project) => { setRenamingState({ id: project.id, name: project.name }); };
+  const handleCancelRename = () => { setRenamingState(null); };
+  const handleConfirmRename = async () => { if (renamingState) { await onSaveLocal(renamingState.id, renamingState.name); setRenamingState(null); } };
 
   const onExportClick = async (format: 'svg' | 'png' | 'csv' | 'pdf') => {
     setLoadingMessage(`Генерация ${format.toUpperCase()}...`);
     setIsLoading(true);
     
-    // Используем актуальные данные в зависимости от контекста вызова
     const effectiveCalculationData = context === 'workbench' 
         ? calculationData 
         : schemeElements.filter(isStageCalculationData);
@@ -386,15 +429,25 @@ export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({ isOpen
       </button>
     );
   };
+  
+  const currentProjectName = currentProject ? `"${currentProject.name}"` : 'Текущий проект';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
-      <div className="bg-white rounded-lg shadow-xl m-4 max-w-sm w-full animate-fade-in flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+    <div 
+        ref={backdropRef}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm" 
+        onMouseDown={handleBackdropMouseDown}
+        onMouseUp={handleBackdropMouseUp}
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="project-modal-title"
+    >
+      <div className="bg-white rounded-lg shadow-xl m-4 max-w-md w-full animate-fade-in flex flex-col max-h-[90vh]">
         <div className="flex justify-between items-center p-4 border-b">
           <h3 id="project-modal-title" className="text-lg font-bold text-gray-800">Проект и Экспорт</h3>
           <button onClick={onClose} className="p-1 rounded-full text-gray-500 hover:bg-gray-200" aria-label="Закрыть"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
-        <div className="border-b border-gray-200 px-4"><nav className="-mb-px flex space-x-6" aria-label="Tabs" role="tablist"><TabButton tabId="project">Проект</TabButton><TabButton tabId="export">Экспорт</TabButton></nav></div>
+        <div className="border-b border-gray-200 px-4"><nav className="-mb-px flex space-x-6" aria-label="Tabs" role="tablist"><TabButton tabId="project">Проект</TabButton><TabButton tabId="export">Экспорт и Файлы</TabButton></nav></div>
         
         <div className="p-6 overflow-y-auto">
           {isLoading ? (
@@ -402,27 +455,91 @@ export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({ isOpen
           ) : (
             <>
               {activeTab === 'project' && (
-                <div className="flex flex-col space-y-3">
-                    <p className="text-sm text-gray-500 text-center">Сохраните текущее состояние проекта в файл или загрузите ранее сохраненный.</p>
-                    <Button onClick={onSave} variant="primary" className="w-full">Сохранить проект</Button>
-                    <Button onClick={onLoadClick} variant="secondary" className="w-full">Загрузить проект</Button>
+                <div className='space-y-6'>
+                    <div>
+                        <Input id="project-name" name="projectName" label="Имя текущего проекта" value={projectNameInput} onChange={e => setProjectNameInput(e.target.value)} placeholder="Например, 'Редуктор лебедки'" />
+                         {currentProject && isDirty && (
+                            <p className="text-xs text-amber-600 font-semibold text-center mt-2">В проекте {currentProjectName} есть несохраненные изменения.</p>
+                        )}
+                        <div className="flex flex-col space-y-2 mt-2">
+                             {currentProject && (
+                                <Button onClick={handleUpdateCurrent} variant="primary" className="w-full" disabled={!isDirty}>Обновить {currentProjectName}</Button>
+                            )}
+                            <Button onClick={handleSaveAsNew} variant="primary" className="w-full" disabled={!projectNameInput.trim()}>Сохранить как новый проект</Button>
+                        </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                        <h4 className="font-semibold text-gray-700 mb-2 text-center">Локальные проекты</h4>
+                        <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
+                            {localProjects.length > 0 ? (
+                                localProjects.map(proj => (
+                                    <div key={proj.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border">
+                                        {renamingState?.id === proj.id ? (
+                                            <div className="flex-grow flex items-center space-x-2">
+                                                <Input 
+                                                    value={renamingState.name}
+                                                    onChange={(e) => setRenamingState(prev => prev ? {...prev, name: e.target.value} : null)}
+                                                    onKeyDown={(e) => { if(e.key === 'Enter') handleConfirmRename(); if(e.key === 'Escape') handleCancelRename(); }}
+                                                    className="!mb-0" inputClassName="!mt-0 !py-1 text-sm"
+                                                />
+                                                <Button onClick={handleConfirmRename} variant='primary' className='!px-2 !py-1 text-xs'>✓</Button>
+                                                <Button onClick={handleCancelRename} variant='secondary' className='!px-2 !py-1 text-xs'>✕</Button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="flex-grow">
+                                                    <div className="flex items-center space-x-2">
+                                                        <p className="font-semibold text-sm text-gray-800">{proj.name}</p>
+                                                        <button onClick={() => handleStartRename(proj)} className='p-1 text-gray-400 rounded-full hover:bg-gray-200 hover:text-gray-700 transition-colors' title="Переименовать">
+                                                            <EditIcon />
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500">
+                                                        {new Date(proj.lastModified).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center space-x-1.5">
+                                                    <Button onClick={() => onLoadLocal(proj.id)} variant='secondary' className='!px-3 !py-1 text-xs'>Загрузить</Button>
+                                                    <Button onClick={() => onDeleteLocal(proj.id)} variant='danger' className='!px-2 !py-1 text-xs' title="Удалить">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-center text-sm text-gray-500 py-4">Нет сохраненных проектов.</p>
+                            )}
+                        </div>
+                    </div>
+                     <div className="border-t pt-4">
+                        <Button onClick={onNewProject} variant="secondary" className="w-full">Создать пустой проект</Button>
+                    </div>
                 </div>
               )}
               {activeTab === 'export' && (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-500 mb-2 border-b pb-1">Полный отчет</h4>
-                    <Button onClick={() => onExportClick('pdf')} variant="secondary" className="w-full">Создать PDF отчет</Button>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 mb-2 border-b pb-1">Только данные</h4>
-                    <Button onClick={() => onExportClick('csv')} variant="secondary" className="w-full">Экспорт в CSV</Button>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 mb-2 border-b pb-1">Только схема</h4>
+                    <h4 className="text-sm font-semibold text-gray-500 mb-2 border-b pb-1">Экспорт отчета</h4>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button onClick={() => onExportClick('svg')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Экспорт схемы доступен только со страницы Сборщика схем' : ''}>Экспорт в SVG</Button>
-                      <Button onClick={() => onExportClick('png')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Экспорт схемы доступен только со страницы Сборщика схем' : ''}>Экспорт в PNG</Button>
+                      <Button onClick={() => onExportClick('pdf')} variant="secondary" className="w-full">PDF отчет</Button>
+                      <Button onClick={() => onExportClick('csv')} variant="secondary" className="w-full">Данные в CSV</Button>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-500 mb-2 border-b pb-1">Экспорт схемы</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button onClick={() => onExportClick('svg')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Экспорт схемы доступен только со страницы Сборщика схем' : ''}>Схема в SVG</Button>
+                      <Button onClick={() => onExportClick('png')} variant="secondary" className="w-full" disabled={context !== 'scheme'} title={context !== 'scheme' ? 'Экспорт схемы доступен только со страницы Сборщика схем' : ''}>Схема в PNG</Button>
+                    </div>
+                  </div>
+                   <div>
+                    <h4 className="text-sm font-semibold text-gray-500 mb-2 border-b pb-1">Файлы проекта</h4>
+                     <div className="flex flex-col space-y-2">
+                        <Button onClick={onSaveToFile} variant="secondary" className="w-full">Сохранить в файл .json</Button>
+                        <Button onClick={onLoadFromFileClick} variant="secondary" className="w-full">Загрузить из файла .json</Button>
                     </div>
                   </div>
                 </div>

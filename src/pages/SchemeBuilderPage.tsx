@@ -1,6 +1,6 @@
 import React, { useState, useLayoutEffect, useRef, useCallback, useEffect, forwardRef } from 'react';
 // FIX: Import ModuleCalculationData to resolve 'Cannot find name' errors.
-import { EngineParams, StageCalculationData, SchemeElement, ModuleCalculationData, ParallelLayoutType } from '../types';
+import { EngineParams, StageCalculationData, SchemeElement, ModuleCalculationData, ParallelLayoutType, Project } from '../types';
 import { usePanAndZoom } from '../hooks/usePanAndZoom';
 import ZoomControls from '../components/ZoomControls';
 import { UgoContextMenu } from '../components/UgoContextMenu';
@@ -20,15 +20,24 @@ interface SchemeBuilderPageProps {
     onBack: () => void;
     onNavigateToModule: (moduleId: string) => void;
     onModuleSelect: (stageIndex: number, moduleId: string) => void;
-    onSaveProject: () => void;
-    onLoadClick: () => void;
+    onSaveProjectToFile: () => void;
+    onLoadProjectFromFileClick: () => void;
     onOpenInfoModal: () => void;
+    // New props for local project management
+    onSaveProjectLocal: (idToUpdate?: string, newName?: string) => Promise<void>;
+    onLoadProjectLocal: (id: string) => Promise<void>;
+    onDeleteProjectLocal: (id: string) => Promise<void>;
+    onNewProject: () => void;
+    currentProject: Project | null;
+    localProjects: Project[];
+    isDirty: boolean;
 }
 
 
 export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPageProps>(({ 
     engineParams, initialSchemeElements, schemeElements, calculationData, setSchemeElements, onBack, 
-    onNavigateToModule, onModuleSelect, onSaveProject, onLoadClick, onOpenInfoModal
+    onNavigateToModule, onModuleSelect, onSaveProjectToFile, onLoadProjectFromFileClick, onOpenInfoModal,
+    onSaveProjectLocal, onLoadProjectLocal, onDeleteProjectLocal, onNewProject, currentProject, localProjects, isDirty
 }, ref) => {
     const [isProjectActionsModalOpen, setIsProjectActionsModalOpen] = useState(false);
     const [contentDimensions, setContentDimensions] = useState({ width: 800, height: 600 });
@@ -262,8 +271,15 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
              <ProjectActionsModal
                 isOpen={isProjectActionsModalOpen}
                 onClose={() => setIsProjectActionsModalOpen(false)}
-                onSave={onSaveProject}
-                onLoadClick={onLoadClick}
+                onSaveToFile={onSaveProjectToFile}
+                onLoadFromFileClick={onLoadProjectFromFileClick}
+                onSaveLocal={onSaveProjectLocal}
+                onLoadLocal={onLoadProjectLocal}
+                onDeleteLocal={onDeleteProjectLocal}
+                onNewProject={onNewProject}
+                currentProject={currentProject}
+                localProjects={localProjects}
+                isDirty={isDirty}
                 context="scheme"
                 svgContainerRef={ref as React.RefObject<HTMLDivElement>}
                 schemeElements={schemeElements}

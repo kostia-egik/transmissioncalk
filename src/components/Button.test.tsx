@@ -3,6 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, vi, expect } from 'vitest';
 import Button from './Button';
 
+// FIX: Import vitest-specific matchers from jest-dom to extend vitest's `expect` and fix TypeScript errors.
+import '@testing-library/jest-dom/vitest';
+
 describe('Компонент Button', () => {
   it('должен отображаться и быть кликабельным', () => {
     const handleClick = vi.fn();

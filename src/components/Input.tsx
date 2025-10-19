@@ -7,7 +7,9 @@ interface InputProps {
   value: string | number;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; // Made onChange optional
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void; // Added onBlur prop
-  type?: 'text' | 'number';
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void; // Added onKeyDown prop
+  // FIX: Add 'email' to the list of allowed input types.
+  type?: 'text' | 'number' | 'email';
   placeholder?: string;
   className?: string;
   labelClassName?: string;
@@ -32,6 +34,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
   value,
   onChange,
   onBlur,
+  onKeyDown,
   type = 'text',
   placeholder,
   className = '',
@@ -92,6 +95,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
         value={value}
         onChange={handleOnChange}
         onBlur={onBlur}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         className={`${inputClassName} ${borderClass} transition-colors duration-300 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${readOnly ? 'bg-gray-100' : 'bg-gray-50'}`}
         required={required}
