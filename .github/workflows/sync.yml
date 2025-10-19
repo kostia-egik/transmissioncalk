@@ -40,12 +40,12 @@ jobs:
           # Робот скачивает все из репозитория от AI
           git fetch upstream
 
-          # ПРИКАЗ: принудительно вернуть старые версии файлов после слияния
-          git checkout origin/main -- README.md favicon.png
-          
           # Робот пытается сделать обычное слияние. Git сам разберется с README и иконкой благодаря .gitattributes
           # Мы добавляем "-X theirs", чтобы в остальных файлах при конфликте выбиралась версия от AI
           git merge -m "Автоматическая синхронизация из AI Studio" -X theirs upstream/main --allow-unrelated-histories
+
+          # ПРИКАЗ: принудительно вернуть старые версии файлов после слияния
+          git checkout origin/main -- README.md favicon.png
           
           # Робот отправляет финальный результат обратно
           git push origin main
