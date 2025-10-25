@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { EngineParams, StageCalculationData, FinalCalculationResults, ShaftOrientation, GearType } from '../types';
 import Button from '../components/Button';
@@ -137,7 +138,18 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
             return;
         }
 
-        const currentSnapshot = JSON.stringify(calculationData.map(s => s.modules.map(m => getGearCategory(m.type))));
+        const createStructuralSnapshot = (data: StageCalculationData[]): string => {
+            return JSON.stringify(data.map(stage => {
+                const selectedModule = stage.modules.find(m => m.isSelected) || stage.modules[0];
+                return {
+                    id: stage.id,
+                    category: getGearCategory(selectedModule.type),
+                    moduleIds: stage.modules.map(m => m.id).sort(),
+                };
+            }));
+        };
+        const currentSnapshot = createStructuralSnapshot(calculationData);
+
         if (currentSnapshot === calculationDataSnapshot) {
             // Структура не изменилась, просто обновляем данные
             onGoToSchemeView({ refresh: true });

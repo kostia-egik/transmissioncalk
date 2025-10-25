@@ -266,10 +266,16 @@ export const UgoContextMenu: React.FC<UgoContextMenuProps> = ({
         <div className="p-3">
             <h4 className="text-xs font-bold uppercase text-gray-400 mb-2">Управление схемой</h4>
             <div className="space-y-2">
-              {isMultiModuleStage && !isCurrentActive && onMakeActive && (
-                  <Button onClick={onMakeActive} variant="primary" className="!w-full !px-2 !py-1.5 text-sm shadow-md shadow-slate-900/40">
-                      Сделать ведущим
-                  </Button>
+              {isMultiModuleStage && onMakeActive && (
+                  isCurrentActive ? (
+                    <Button onClick={onMakeActive} variant="primary" className="!w-full !px-2 !py-1.5 text-sm shadow-md shadow-slate-900/40">
+                        Сделать ведущим
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" disabled className="!w-full !px-2 !py-1.5 text-sm">
+                        ✓ Ведущий
+                    </Button>
+                  )
               )}
                {onGoToWorkbench && (
                 <Button onClick={onGoToWorkbench} variant="secondary" className="!w-full !px-2 !py-1.5 text-sm flex items-center justify-center space-x-2 shadow-md shadow-slate-900/40">

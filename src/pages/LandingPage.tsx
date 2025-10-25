@@ -89,7 +89,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
     <div className="min-h-screen w-full flex flex-col bg-slate-100" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'10\' height=\'10\' viewBox=\'0 0 10\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2\' stroke=\'%23cbd5e1\' stroke-opacity=\'0.6\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }}>
       <header className="w-full p-4 bg-white/80 backdrop-blur-sm sticky top-0 z-30 border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-slate-800">Калькулятор трансмиссий</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Калькуляторы трансмиссий</h1>
           <div className="flex items-center space-x-4">
             {/* Placeholder for future controls */}
             <div className="text-sm text-gray-400">[Язык]</div>
@@ -116,8 +116,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <section className="text-center bg-white p-8 rounded-xl shadow-lg mb-10">
-          <p className="max-w-3xl mx-auto text-xl text-slate-800 mb-8">
-            Визуальный конструктор схем и каскадный расчет кинематики. От идеи до готового чертежа и полного отчета.
+          <p className="max-w-4xl mx-auto text-xl text-slate-800 mb-8">
+            Проектируйте многоступенчатые трансмиссии любой сложности. Собирайте каскад передач, задавайте параметры и мгновенно получайте все расчеты. Автоматическая генерация кинематической схемы поможет вам визуализировать и скомпоновать трансмиссию.
           </p>
           <Button onClick={onNavigateToWorkbench} variant="primary" className="!px-10 !py-4 text-lg animate-pulse-shadow">
             Перейти к калькулятору
@@ -129,7 +129,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-10">
             <div className="bg-white p-6 rounded-xl shadow-lg">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">Визуальная демонстрация</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                 {/* Screenshot placeholders */}
                 <div className="aspect-video bg-slate-200 rounded-lg flex items-center justify-center text-slate-500 text-sm font-semibold">[Скриншот 1]</div>
