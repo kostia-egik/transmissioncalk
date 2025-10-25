@@ -27,7 +27,6 @@ interface WorkbenchPageProps {
   finalResultsRef: React.Ref<HTMLDivElement>;
   scrollToModuleId: string | null;
   onScrollComplete: () => void;
-  onRevertAndGoToScheme: () => void;
   setShowChangesDialog: (show: boolean) => void;
   confirmAction: (title: string, message: React.ReactNode, onConfirm: () => void, storageKey?: string) => void;
 }
@@ -36,7 +35,7 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
   engineParams, setEngineParams, resetEngineParams, calculationData, onCalculationDataChange,
   onResetConfiguration, finalResults, showFinalResults, isSchemeBuilt, onBuildNewScheme, onGoToSchemeView, 
   calculationDataSnapshot, showNotification, finalResultsRef, scrollToModuleId, onScrollComplete,
-  onRevertAndGoToScheme, setShowChangesDialog, confirmAction
+  setShowChangesDialog, confirmAction
 }) => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [activeTooltip, setActiveTooltip] = useState<{ content: TooltipContent; targetRect: DOMRect } | null>(null);
