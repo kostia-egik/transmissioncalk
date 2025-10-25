@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { EngineParams, StageCalculationData, FinalCalculationResults, ShaftOrientation, GearType } from '../types';
 import Button from '../components/Button';
@@ -29,15 +27,18 @@ interface WorkbenchPageProps {
   finalResultsRef: React.Ref<HTMLDivElement>;
   scrollToModuleId: string | null;
   onScrollComplete: () => void;
+  onRevertAndGoToScheme: () => void;
+  setShowChangesDialog: (show: boolean) => void;
+  confirmAction: (title: string, message: React.ReactNode, onConfirm: () => void, storageKey?: string) => void;
 }
 
 const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
   engineParams, setEngineParams, resetEngineParams, calculationData, onCalculationDataChange,
   onResetConfiguration, finalResults, showFinalResults, isSchemeBuilt, onBuildNewScheme, onGoToSchemeView, 
-  calculationDataSnapshot, showNotification, finalResultsRef, scrollToModuleId, onScrollComplete
+  calculationDataSnapshot, showNotification, finalResultsRef, scrollToModuleId, onScrollComplete,
+  onRevertAndGoToScheme, setShowChangesDialog, confirmAction
 }) => {
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [showChangesDialog, setShowChangesDialog] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<{ content: TooltipContent; targetRect: DOMRect } | null>(null);
     const [highlightedModuleId, setHighlightedModuleId] = useState<string | null>(null);
     const [highlightPriority, setHighlightPriority] = useState(false);
@@ -124,13 +125,16 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
 
     const handleBuildSchemeClick = useCallback(() => {
         if (isSchemeBuilt) {
-            if (window.confirm('Вы уверены, что хотите перестроить схему? Все ваши предыдущие изменения в компоновке будут потеряны.')) {
-                onBuildNewScheme();
-            }
+            confirmAction(
+                'Перестроить схему?',
+                'Вы уверены, что хотите перестроить схему? Все ваши предыдущие изменения в компоновке будут потеряны.',
+                onBuildNewScheme,
+                'dontShowRebuildSchemeWarning'
+            );
         } else {
             onBuildNewScheme();
         }
-    }, [isSchemeBuilt, onBuildNewScheme]);
+    }, [isSchemeBuilt, onBuildNewScheme, confirmAction]);
     
     const handleReturnClick = useCallback(() => {
         if (!calculationDataSnapshot) {
@@ -138,6 +142,7 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
             return;
         }
 
+        // Эта функция создает "снимок" структуры текущей конфигурации
         const createStructuralSnapshot = (data: StageCalculationData[]): string => {
             return JSON.stringify(data.map(stage => {
                 const selectedModule = stage.modules.find(m => m.isSelected) || stage.modules[0];
@@ -149,15 +154,15 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
             }));
         };
         const currentSnapshot = createStructuralSnapshot(calculationData);
-
+        
         if (currentSnapshot === calculationDataSnapshot) {
-            // Структура не изменилась, просто обновляем данные
+            // Структура не изменилась, просто обновляем данные на схеме
             onGoToSchemeView({ refresh: true });
         } else {
             // Структура изменилась, показываем диалог
             setShowChangesDialog(true);
         }
-    }, [calculationData, calculationDataSnapshot, onGoToSchemeView]);
+    }, [calculationData, calculationDataSnapshot, onGoToSchemeView, setShowChangesDialog]);
 
     return (
         <div className="space-y-8 py-8">
@@ -236,28 +241,6 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
                 // The container div is kept here, and the ref is correctly applied.
                 <div id="final-results-card" className="mt-8 bg-white p-4 sm:p-6 rounded-lg shadow-xl shadow-slate-900/80" ref={finalResultsRef}>
                     <FinalResultsDisplay results={finalResults} />
-                </div>
-            )}
-
-            {showChangesDialog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm" onClick={() => setShowChangesDialog(false)}>
-                    <div className="bg-white rounded-lg shadow-xl p-6 m-4 max-w-md w-full animate-fade-in" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold text-gray-800">Обнаружены изменения в конфигурации</h3>
-                        <p className="mt-2 text-sm text-gray-600">
-                            Вы внесли структурные изменения на рабочем столе. Существующая компоновка схемы больше не актуальна. Что вы хотите сделать?
-                        </p>
-                        <div className="mt-6 flex flex-col space-y-3">
-                            <Button variant="primary" onClick={() => { onBuildNewScheme(); setShowChangesDialog(false); }}>
-                                Обновить схему и отбросить компоновку
-                            </Button>
-                            <Button variant="secondary" onClick={() => { onGoToSchemeView(); showNotification('Внимание: компоновка схемы может не соответствовать текущим расчетам.', 'warning'); setShowChangesDialog(false); }}>
-                                Вернуться к старой компоновке
-                            </Button>
-                            <Button variant="secondary" onClick={() => setShowChangesDialog(false)}>
-                                Отмена
-                            </Button>
-                        </div>
-                    </div>
                 </div>
             )}
         </div>

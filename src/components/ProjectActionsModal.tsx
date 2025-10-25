@@ -332,12 +332,13 @@ interface ProjectActionsModalProps {
   schemeElements: SchemeElement[];
   calculationData: StageCalculationData[];
   engineParams: EngineParams;
+  confirmAction: (title: string, message: React.ReactNode, onConfirm: () => void, storageKey?: string) => void;
 }
 
 export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({ 
     isOpen, onClose, onSaveToFile, onLoadFromFileClick, onSaveLocal, onLoadLocal, onDeleteLocal, onNewProject,
     currentProject, localProjects, isDirty,
-    context, svgContainerRef, schemeElements, calculationData, engineParams 
+    context, svgContainerRef, schemeElements, calculationData, engineParams, confirmAction
 }) => {
   const [activeTab, setActiveTab] = useState('project');
   const [isLoading, setIsLoading] = useState(false);
@@ -378,6 +379,15 @@ export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({
   const handleStartRename = (project: Project) => { setRenamingState({ id: project.id, name: project.name }); };
   const handleCancelRename = () => { setRenamingState(null); };
   const handleConfirmRename = async () => { if (renamingState) { await onSaveLocal(renamingState.id, renamingState.name); setRenamingState(null); } };
+  
+  const handleDelete = (id: string) => {
+    confirmAction(
+        'Удалить проект?',
+        'Вы уверены, что хотите удалить этот проект? Это действие необратимо.',
+        () => onDeleteLocal(id),
+        'dontShowDeleteProjectWarning'
+    );
+  };
 
   const onExportClick = async (format: 'svg' | 'png' | 'csv' | 'pdf') => {
     setLoadingMessage(`Генерация ${format.toUpperCase()}...`);
@@ -501,7 +511,7 @@ export const ProjectActionsModal: React.FC<ProjectActionsModalProps> = ({
                                                 </div>
                                                 <div className="flex items-center space-x-1.5">
                                                     <Button onClick={() => onLoadLocal(proj.id)} variant='secondary' className='!px-3 !py-1 text-xs'>Загрузить</Button>
-                                                    <Button onClick={() => onDeleteLocal(proj.id)} variant='danger' className='!px-2 !py-1 text-xs' title="Удалить">
+                                                    <Button onClick={() => handleDelete(proj.id)} variant='danger' className='!px-2 !py-1 text-xs' title="Удалить">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                     </Button>
                                                 </div>
