@@ -1104,7 +1104,6 @@ useEffect(() => {
               onResetConfiguration={handleResetConfiguration}
               scrollToModuleId={scrollToModuleId}
               onScrollComplete={handleScrollComplete}
-              onRevertAndGoToScheme={handleRevertAndGoToScheme}
               setShowChangesDialog={setShowChangesDialog}
               confirmAction={confirmAction}
             />
