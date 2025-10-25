@@ -17,6 +17,88 @@ import { HomeIcon } from '../assets/icons/HomeIcon';
 import { getAllProjects, getProject, saveProject, deleteProject } from '../services/db';
 
 
+// --- Confirmation Modal Component ---
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  title: string;
+  message: React.ReactNode;
+  onConfirm: (dontShowAgain: boolean) => void;
+  onCancel: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  showDontShowAgain?: boolean;
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+  isOpen,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmText = 'Да',
+  cancelText = 'Нет',
+  showDontShowAgain = true,
+}) => {
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleConfirm = () => {
+    onConfirm(dontShowAgain);
+  };
+  
+  const handleCancel = () => {
+      setDontShowAgain(false); // Reset on cancel
+      onCancel();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[999999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmation-modal-title"
+      onClick={handleCancel}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-11/12 max-w-lg m-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <h2 id="confirmation-modal-title" className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
+          <div className="text-gray-600 space-y-2">{message}</div>
+
+          {showDontShowAgain && (
+            <div className="mt-6 flex items-center">
+              <input
+                id="dont-show-again"
+                type="checkbox"
+                checked={dontShowAgain}
+                onChange={(e) => setDontShowAgain(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor="dont-show-again" className="ml-2 block text-sm text-gray-700 cursor-pointer">
+                Больше не показывать это сообщение
+              </label>
+            </div>
+          )}
+        </div>
+        <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3">
+          <Button onClick={handleCancel} variant="secondary">
+            {cancelText}
+          </Button>
+          <Button onClick={handleConfirm} variant="primary">
+            {confirmText}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 interface WorkbenchProps {
   onNavigateToHome: () => void;
   navigate: (path: string) => void;
@@ -199,13 +281,13 @@ const defaultCalculationData: StageCalculationData[] = [
 ];
 
 const createDataSnapshot = (data: StageCalculationData[]): string => {
-  // This snapshot captures the fundamental structure: stages, module counts, and the category of the selected gear.
+  // Этот снимок фиксирует фундаментальную структуру: ступени, ID модулей и категорию выбранной передачи.
   return JSON.stringify(data.map(stage => {
       const selectedModule = stage.modules.find(m => m.isSelected) || stage.modules[0];
       return {
           id: stage.id,
           category: getGearCategory(selectedModule.type),
-          moduleIds: stage.modules.map(m => m.id).sort(), // Track module presence
+          moduleIds: stage.modules.map(m => m.id).sort(), // Отслеживаем наличие модулей
       };
   }));
 };
@@ -229,6 +311,17 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
   const [schemeElements, setSchemeElements] = useState<SchemeElement[]>([]);
   const [initialSchemeElements, setInitialSchemeElements] = useState<SchemeElement[]>([]);
   const [calculationDataSnapshot, setCalculationDataSnapshot] = useState<string | null>(null);
+  const [calculationDataForRevert, setCalculationDataForRevert] = useState<StageCalculationData[] | null>(null);
+  const [showChangesDialog, setShowChangesDialog] = useState(false);
+
+  const [confirmationState, setConfirmationState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    onConfirm: () => void;
+    onCancel?: () => void;
+    storageKey?: string;
+  } | null>(null);
 
   const finalResultsRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -252,6 +345,42 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
   const [localProjects, setLocalProjects] = useState<Project[]>([]);
   const [isDirty, setIsDirty] = useState(false);
   const [lastSavedState, setLastSavedState] = useState<string>(getDefaultStateAsString());
+
+  const confirmAction = useCallback((
+    title: string,
+    message: React.ReactNode,
+    onConfirm: () => void,
+    storageKey?: string
+  ) => {
+    if (storageKey && localStorage.getItem(storageKey) === 'true') {
+        onConfirm();
+        return;
+    }
+    setConfirmationState({
+        isOpen: true,
+        title,
+        message,
+        onConfirm,
+        storageKey
+    });
+  }, []);
+
+  const handleConfirmationConfirm = (dontShowAgain: boolean) => {
+    if (confirmationState) {
+        if (confirmationState.storageKey && dontShowAgain) {
+            localStorage.setItem(confirmationState.storageKey, 'true');
+        }
+        confirmationState.onConfirm();
+        setConfirmationState(null);
+    }
+  };
+
+  const handleConfirmationCancel = () => {
+    if (confirmationState?.onCancel) {
+        confirmationState.onCancel();
+    }
+    setConfirmationState(null);
+  };
 
   const showNotification = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
     if (notificationTimerRef.current) {
@@ -310,26 +439,36 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
   }, []);
 
   const handleLoadProjectLocal = useCallback(async (id: string) => {
-    if (isDirty && !window.confirm('У вас есть несохраненные изменения. Вы уверены, что хотите загрузить другой проект? Изменения будут потеряны.')) {
-      return;
-    }
-    const project = await getProject(id);
-    if (project) {
-      const { engineParams: ep, calculationData: cd, schemeElements: se } = project.data;
-      setEngineParams(ep);
-      setCalculationData(cd);
-      setSchemeElements(se || []);
-      setCurrentProject(project);
-      setLastSavedState(JSON.stringify({ engineParams: ep, calculationData: cd, schemeElements: se || [] }));
-      
-      handleCalculationDataChange(cd);
-      
-      showNotification(`Проект "${project.name}" загружен.`, 'success');
-      setIsProjectActionsModalOpen(false);
+    const loadFn = async () => {
+      const project = await getProject(id);
+      if (project) {
+        const { engineParams: ep, calculationData: cd, schemeElements: se } = project.data;
+        setEngineParams(ep);
+        setCalculationData(cd);
+        setSchemeElements(se || []);
+        setCurrentProject(project);
+        setLastSavedState(JSON.stringify({ engineParams: ep, calculationData: cd, schemeElements: se || [] }));
+        
+        handleCalculationDataChange(cd);
+        
+        showNotification(`Проект "${project.name}" загружен.`, 'success');
+        setIsProjectActionsModalOpen(false);
+      } else {
+        showNotification('Не удалось загрузить проект.', 'error');
+      }
+    };
+
+    if (isDirty) {
+      confirmAction(
+        'Несохраненные изменения',
+        'У вас есть несохраненные изменения. Вы уверены, что хотите загрузить другой проект? Изменения будут потеряны.',
+        loadFn,
+        'dontShowLoadDirtyProjectWarning'
+      );
     } else {
-      showNotification('Не удалось загрузить проект.', 'error');
+      loadFn();
     }
-  }, [isDirty, showNotification, handleCalculationDataChange]);
+  }, [isDirty, showNotification, handleCalculationDataChange, confirmAction]);
 
   const handleSaveProjectLocal = useCallback(async (idToUpdate?: string, newName?: string) => {
     const dataToSave = { engineParams, calculationData, schemeElements };
@@ -369,32 +508,39 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
 }, [engineParams, calculationData, schemeElements, currentProject, refreshLocalProjects, showNotification]);
 
 const handleDeleteProjectLocal = useCallback(async (id: string) => {
-    if (window.confirm('Вы уверены, что хотите удалить этот проект? Это действие необратимо.')) {
-        await deleteProject(id);
-        await refreshLocalProjects();
-        if (currentProject?.id === id) {
-            setCurrentProject(null);
-            // After deleting the current project, the state is now like a new, unsaved project
-            setLastSavedState(getDefaultStateAsString());
-        }
-        showNotification('Проект удален.', 'success');
+    await deleteProject(id);
+    await refreshLocalProjects();
+    if (currentProject?.id === id) {
+        setCurrentProject(null);
+        // After deleting the current project, the state is now like a new, unsaved project
+        setLastSavedState(getDefaultStateAsString());
     }
+    showNotification('Проект удален.', 'success');
 }, [currentProject, refreshLocalProjects, showNotification]);
 
 const handleNewProject = useCallback(() => {
-    if (isDirty && !window.confirm('У вас есть несохраненные изменения. Вы уверены, что хотите создать новый проект?')) {
-        return;
+    const createNew = () => {
+      setEngineParams(DEFAULT_ENGINE_PARAMS);
+      setCalculationData(defaultCalculationData);
+      setSchemeElements([]);
+      setCurrentProject(null);
+      setLastSavedState(getDefaultStateAsString());
+      handleCalculationDataChange(defaultCalculationData);
+      showNotification('Создан новый пустой проект.', 'success');
+      setIsProjectActionsModalOpen(false);
+    };
+
+    if (isDirty) {
+      confirmAction(
+        'Несохраненные изменения',
+        'У вас есть несохраненные изменения. Вы уверены, что хотите создать новый проект?',
+        createNew,
+        'dontShowNewDirtyProjectWarning'
+      );
+    } else {
+      createNew();
     }
-    
-    setEngineParams(DEFAULT_ENGINE_PARAMS);
-    setCalculationData(defaultCalculationData);
-    setSchemeElements([]);
-    setCurrentProject(null);
-    setLastSavedState(getDefaultStateAsString());
-    handleCalculationDataChange(defaultCalculationData);
-    showNotification('Создан новый пустой проект.', 'success');
-    setIsProjectActionsModalOpen(false);
-}, [isDirty, showNotification, handleCalculationDataChange]);
+}, [isDirty, showNotification, handleCalculationDataChange, confirmAction]);
 
 // Fetch projects on initial mount
 useEffect(() => {
@@ -622,6 +768,7 @@ useEffect(() => {
       const defaultScheme = generateDefaultScheme(calculationData);
       const snapshot = createDataSnapshot(calculationData);
       setCalculationDataSnapshot(snapshot);
+      setCalculationDataForRevert(calculationData);
       setInitialSchemeElements(defaultScheme);
       setSchemeElements(defaultScheme);
       navigate('/scheme');
@@ -633,13 +780,16 @@ useEffect(() => {
     };
 
     if (hasMissingParams) {
-        if (window.confirm("Внимание: Параметры передач не были полностью заполнены. Схема будет построена как кинематическая, без учета реальных габаритов и передаточных чисел. Соотношение размеров элементов будет условным. Продолжить?")) {
-            proceed();
-        }
+        confirmAction(
+            'Подтвердите действие',
+            'Внимание: Параметры передач не были полностью заполнены. Схема будет построена как кинематическая, без учета реальных габаритов и передаточных чисел. Соотношение размеров элементов будет условным. Продолжить?',
+            proceed,
+            'dontShowMissingParamsWarning'
+        );
     } else {
         proceed();
     }
-  }, [calculationData, showNotification, navigate]);
+  }, [calculationData, showNotification, navigate, confirmAction]);
 
   const handleGoToSchemeView = useCallback((options?: { refresh?: boolean }) => {
     if (options?.refresh) {
@@ -650,10 +800,27 @@ useEffect(() => {
       setSchemeElements(updatedScheme);
       // Также обновляем "начальную" схему, чтобы сброс работал корректно
       setInitialSchemeElements(updatedScheme);
+       // Обновляем данные для отката и снепшот
+      setCalculationDataForRevert(updatedCalculationData);
+      setCalculationDataSnapshot(createDataSnapshot(updatedCalculationData));
       showNotification('Параметры на схеме обновлены!', 'success');
     }
     navigate('/scheme');
   }, [engineParams, calculationData, schemeElements, showNotification, navigate]);
+  
+  const handleRevertAndGoToScheme = useCallback(() => {
+    if (calculationDataForRevert) {
+      // Восстанавливаем данные на "Рабочем столе"
+      setCalculationData(calculationDataForRevert);
+      // Пересчитываем итоговые значения на основе восстановленных данных
+      handleCalculationDataChange(calculationDataForRevert);
+    }
+    // Просто переходим на схему, не меняя ее
+    navigate('/scheme');
+    setShowChangesDialog(false);
+    showNotification('Изменения на рабочем столе отменены.', 'success');
+  }, [calculationDataForRevert, handleCalculationDataChange, navigate, showNotification]);
+
 
   const handleResetConfiguration = useCallback(() => {
     setCalculationData(defaultCalculationData);
@@ -705,11 +872,23 @@ useEffect(() => {
     }, [engineParams, calculationData, schemeElements, showNotification]);
 
     const handleLoadFromFileClick = useCallback(() => {
-        if (isDirty && !window.confirm('У вас есть несохраненные изменения. Вы уверены, что хотите загрузить проект из файла? Изменения будут потеряны.')) {
-            return;
+        const openFilePicker = () => {
+            if (fileInputRef.current) {
+                fileInputRef.current.click();
+            }
+        };
+
+        if (isDirty) {
+            confirmAction(
+                'Несохраненные изменения',
+                'У вас есть несохраненные изменения. Вы уверены, что хотите загрузить проект из файла? Изменения будут потеряны.',
+                openFilePicker,
+                'dontShowLoadFileDirtyProjectWarning'
+            );
+        } else {
+            openFilePicker();
         }
-        fileInputRef.current?.click();
-    }, [isDirty]);
+    }, [isDirty, confirmAction]);
 
     const handleFileSelected = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -784,6 +963,15 @@ useEffect(() => {
   return (
     <div className={appContainerClass}>
       {/* <Analytics /> */}
+      {confirmationState?.isOpen && (
+        <ConfirmationModal
+            isOpen={confirmationState.isOpen}
+            title={confirmationState.title}
+            message={confirmationState.message}
+            onConfirm={handleConfirmationConfirm}
+            onCancel={handleConfirmationCancel}
+        />
+      )}
       {!isSchemeDrawing && (
         <header className="w-full p-2 sm:p-4 bg-white/80 backdrop-blur-sm sm:sticky top-0 z-30 border-b border-slate-200 flex justify-between items-center shadow-md shadow-slate-900/40">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
@@ -828,10 +1016,12 @@ useEffect(() => {
             currentProject={currentProject}
             localProjects={localProjects}
             isDirty={isDirty}
-            context="workbench"
+            context={currentStep === AppStep.Workbench ? 'workbench' : 'scheme'}
+            svgContainerRef={svgContainerRef}
             schemeElements={schemeElements}
             calculationData={calculationData}
             engineParams={engineParams}
+            confirmAction={confirmAction}
         />
         <InfoModal 
             isOpen={isInfoModalOpen} 
@@ -840,6 +1030,44 @@ useEffect(() => {
             onStartWorkbenchTour={handleStartWorkbenchTour}
             onStartSchemeTour={handleStartSchemeTour}
         />
+         {showChangesDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm" onClick={() => setShowChangesDialog(false)}>
+                    <div className="bg-white rounded-lg shadow-xl p-6 m-4 max-w-md w-full animate-fade-in" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold text-gray-800">Обнаружены структурные изменения!</h3>
+                        <p className="mt-2 text-sm text-gray-600">
+                           Вы изменили тип передачи (например, с параллельной на угловую), добавили или удалили ступень. Эти изменения конфликтуют с текущей компоновкой схемы. Пожалуйста, выберите действие:
+                        </p>
+                        <div className="mt-6 flex flex-col space-y-3">
+                            <Button variant="primary" onClick={() => { 
+                                confirmAction(
+                                    'Перестроить схему?',
+                                    'Вы уверены, что хотите перестроить схему? Все ваши предыдущие изменения в компоновке будут потеряны.',
+                                    () => {
+                                        handleBuildNewScheme();
+                                        setShowChangesDialog(false);
+                                    },
+                                    'dontShowRebuildSchemeWarning'
+                                );
+                            }}>
+                                Применить и перестроить схему (сброс компоновки)
+                            </Button>
+                            <Button variant="secondary" onClick={() => {
+                                confirmAction(
+                                    "Отменить изменения?",
+                                    "Вы уверены? Все несохраненные изменения на 'Рабочем столе' будут отменены.",
+                                    handleRevertAndGoToScheme,
+                                    'dontShowRevertChangesWarning'
+                                );
+                             }}>
+                                Отменить изменения и вернуться к схеме
+                            </Button>
+                            <Button variant="secondary" onClick={() => setShowChangesDialog(false)}>
+                                Отмена
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         <input type="file" ref={fileInputRef} onChange={handleFileSelected} style={{ display: 'none' }} accept=".json,application/json" />
         
         {notification && (
@@ -876,6 +1104,9 @@ useEffect(() => {
               onResetConfiguration={handleResetConfiguration}
               scrollToModuleId={scrollToModuleId}
               onScrollComplete={handleScrollComplete}
+              onRevertAndGoToScheme={handleRevertAndGoToScheme}
+              setShowChangesDialog={setShowChangesDialog}
+              confirmAction={confirmAction}
             />
             <OnboardingManager tourKey="workbench" startTourTrigger={tourTrigger} />
           </>
@@ -904,6 +1135,7 @@ useEffect(() => {
               currentProject={currentProject}
               localProjects={localProjects}
               isDirty={isDirty}
+              confirmAction={confirmAction}
             />
             <OnboardingManager tourKey="scheme" startTourTrigger={schemeTourTrigger} />
           </>

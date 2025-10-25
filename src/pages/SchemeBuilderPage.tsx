@@ -31,13 +31,15 @@ interface SchemeBuilderPageProps {
     currentProject: Project | null;
     localProjects: Project[];
     isDirty: boolean;
+    confirmAction: (title: string, message: React.ReactNode, onConfirm: () => void, storageKey?: string) => void;
 }
 
 
 export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPageProps>(({ 
     engineParams, initialSchemeElements, schemeElements, calculationData, setSchemeElements, onBack, 
     onNavigateToModule, onModuleSelect, onSaveProjectToFile, onLoadProjectFromFileClick, onOpenInfoModal,
-    onSaveProjectLocal, onLoadProjectLocal, onDeleteProjectLocal, onNewProject, currentProject, localProjects, isDirty
+    onSaveProjectLocal, onLoadProjectLocal, onDeleteProjectLocal, onNewProject, currentProject, localProjects, isDirty,
+    confirmAction
 }, ref) => {
     const [isProjectActionsModalOpen, setIsProjectActionsModalOpen] = useState(false);
     const [contentDimensions, setContentDimensions] = useState({ width: 800, height: 600 });
@@ -248,11 +250,17 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
     }, [selectedUgo, onBack, onNavigateToModule, handleCloseMenus]);
 
     const handleResetScheme = useCallback(() => {
-        if (window.confirm('Вы уверены, что хотите сбросить все изменения и вернуться к исходной схеме?')) {
+        const resetFn = () => {
           setSchemeElements(initialSchemeElements);
           handleCloseMenus();
-        }
-    }, [initialSchemeElements, setSchemeElements, handleCloseMenus]);
+        };
+        confirmAction(
+            'Сбросить схему?',
+            'Вы уверены, что хотите сбросить все изменения и вернуться к исходной схеме?',
+            resetFn,
+            'dontShowResetSchemeWarning'
+        );
+    }, [initialSchemeElements, setSchemeElements, handleCloseMenus, confirmAction]);
     
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -285,6 +293,7 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                 schemeElements={schemeElements}
                 calculationData={calculationData}
                 engineParams={engineParams}
+                confirmAction={confirmAction}
             />
             <SchemeBuilderHeader
                 onBack={onBack}
