@@ -143,40 +143,41 @@ const mergeCalculationDataIntoScheme = (
   scheme: SchemeElement[],
   newData: StageCalculationData[]
 ): SchemeElement[] => {
-  let dataIndex = 0;
+  const newDataMap = new Map(newData.map(stage => [stage.id, stage]));
+
   return scheme.map(element => {
-    // Пропускаем валы-проставки
+    // Spacers are returned as-is
     if ('type' in element && element.type === 'spacer') {
       return element;
     }
     
     const stageElement = element as StageCalculationData;
-    if (dataIndex < newData.length) {
-      const correspondingNewStage = newData[dataIndex];
-      const mergedModules = stageElement.modules.map(schemeModule => {
-        const correspondingNewModule = correspondingNewStage.modules.find(
-          newModule => newModule.id === schemeModule.id
+    const correspondingNewStage = newDataMap.get(stageElement.id);
+
+    // If a corresponding stage exists in the new data, merge it.
+    if (correspondingNewStage) {
+      // Merge modules, keeping layout properties from the old scheme element
+      const mergedModules = correspondingNewStage.modules.map(newModule => {
+        const existingSchemeModule = stageElement.modules.find(
+          schemeModule => schemeModule.id === newModule.id
         );
-        if (correspondingNewModule) {
-          // Сохраняем пользовательские настройки компоновки из старой схемы
-          // и объединяем их с новыми расчетными данными
-          return {
-            ...correspondingNewModule,
-            layout: schemeModule.layout,
-            isReversed: schemeModule.isReversed,
-          };
-        }
-        return schemeModule; // На случай, если модуль не найден
+        return {
+          ...newModule, // Fresh calculation data
+          layout: existingSchemeModule?.layout || ParallelLayoutType.Standard, // Keep old layout or default
+          isReversed: existingSchemeModule?.isReversed || false, // Keep old layout or default
+        };
       });
 
-      dataIndex++;
       return {
-        ...stageElement,
-        ...correspondingNewStage, // Применяем новые данные уровня ступени
-        modules: mergedModules, // Используем обновленные модули
+        ...stageElement, // Keeps layout properties like 'turn'
+        ...correspondingNewStage, // Applies new stage-level data (name, etc.)
+        modules: mergedModules, // Use the newly merged modules
       };
     }
-    return stageElement; // На случай несоответствия длин массивов
+
+    // This stage was deleted. This shouldn't happen during a soft update,
+    // but we return the old element to be safe.
+    return stageElement;
   });
 };
 
@@ -198,7 +199,15 @@ const defaultCalculationData: StageCalculationData[] = [
 ];
 
 const createDataSnapshot = (data: StageCalculationData[]): string => {
-    return JSON.stringify(data.map(s => s.modules.map(m => getGearCategory(m.type))));
+  // This snapshot captures the fundamental structure: stages, module counts, and the category of the selected gear.
+  return JSON.stringify(data.map(stage => {
+      const selectedModule = stage.modules.find(m => m.isSelected) || stage.modules[0];
+      return {
+          id: stage.id,
+          category: getGearCategory(selectedModule.type),
+          moduleIds: stage.modules.map(m => m.id).sort(), // Track module presence
+      };
+  }));
 };
 
 const getDefaultStateAsString = () => {
