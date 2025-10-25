@@ -810,16 +810,30 @@ useEffect(() => {
   
   const handleRevertAndGoToScheme = useCallback(() => {
     if (calculationDataForRevert) {
-      // Восстанавливаем данные на "Рабочем столе"
-      setCalculationData(calculationDataForRevert);
-      // Пересчитываем итоговые значения на основе восстановленных данных
-      handleCalculationDataChange(calculationDataForRevert);
+      // Re-run the calculation with the data to be restored.
+      const { results, updatedCalculationData, error } = calculateCascade(engineParams, calculationDataForRevert);
+
+      // Directly set the state to the restored and recalculated data.
+      setCalculationData(updatedCalculationData);
+
+      // Update final results.
+      if (error) {
+        showNotification(error, 'error');
+        setFinalResults(null);
+      } else {
+        setFinalResults(results);
+      }
+      
+      if (updatedCalculationData.some(stage => stage.modules.some(m => m.isSelected))) {
+          setShowFinalResults(true);
+      }
+      
+      // Navigate to scheme, close dialog and notify user.
+      navigate('/scheme');
+      setShowChangesDialog(false);
+      showNotification('Изменения на рабочем столе отменены.', 'success');
     }
-    // Просто переходим на схему, не меняя ее
-    navigate('/scheme');
-    setShowChangesDialog(false);
-    showNotification('Изменения на рабочем столе отменены.', 'success');
-  }, [calculationDataForRevert, handleCalculationDataChange, navigate, showNotification]);
+  }, [calculationDataForRevert, engineParams, navigate, showNotification]);
 
 
   const handleResetConfiguration = useCallback(() => {
