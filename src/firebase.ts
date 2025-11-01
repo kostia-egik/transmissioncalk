@@ -1,18 +1,6 @@
-// FIX: Replaced the failing `/// <reference types="vite/client" />` with an explicit declaration 
-// for import.meta.env. This resolves TypeScript errors about missing types for Vite's environment variables 
-// when the type definition file cannot be found.
-declare global {
-  interface ImportMeta {
-    readonly env: {
-      readonly VITE_FIREBASE_API_KEY: string;
-      readonly VITE_FIREBASE_AUTH_DOMAIN: string;
-      readonly VITE_FIREBASE_PROJECT_ID: string;
-      readonly VITE_FIREBASE_STORAGE_BUCKET: string;
-      readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
-      readonly VITE_FIREBASE_APP_ID: string;
-    };
-  }
-}
+// FIX: Removed the conflicting global declaration of `ImportMeta.env`. The environment variable types
+// have been moved to `src/custom.d.ts` to properly augment Vite's built-in types via declaration merging,
+// which resolves the "Subsequent property declarations must have the same type" error.
 
 // FIX: Обновляем импорты Firebase для использования v9 compat-библиотек.
 // Это позволяет коду, написанному в стиле v8, работать с последней версией Firebase и исправляет ошибку импорта.
