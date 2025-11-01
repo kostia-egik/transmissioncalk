@@ -8,6 +8,11 @@ export default defineConfig({
   optimizeDeps: {
     include: ['jspdf'],
   },
+  build: {
+    // Предотвращаем встраивание мелких файлов в виде data: URL.
+    // Это гарантирует, что Service Worker всегда будет отдельным файлом.
+    assetsInlineLimit: 0,
+  },
   test: {
     globals: true,
     environment: 'jsdom',

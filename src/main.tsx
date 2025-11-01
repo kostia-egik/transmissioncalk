@@ -5,14 +5,16 @@ import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { NetworkProvider } from './contexts/NetworkContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+// Импортируем URL сервис-воркера с помощью специального синтаксиса Vite `?url`.
+// Это гарантирует, что Vite обработает файл и предоставит на него корректную ссылку.
+import serviceWorkerUrl from '../service-worker.js?url';
 
 
 // --- Регистрация Service Worker ---
 if ('serviceWorker' in navigator) {
-  // Регистрируем Service Worker по его прямому пути.
-  // Это самый надежный способ, который работает во всех средах, включая Vercel.
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
+    // Используем импортированный URL для регистрации.
+    navigator.serviceWorker.register(serviceWorkerUrl, { type: 'module' })
       .then(registration => {
         console.log('Service Worker зарегистрирован успешно, scope:', registration.scope);
       })
