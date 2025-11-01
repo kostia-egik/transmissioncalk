@@ -5,11 +5,14 @@ import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { NetworkProvider } from './contexts/NetworkContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+// @ts-ignore
+import serviceWorkerUrl from '/service-worker.js?url';
+
 
 // --- Регистрация Service Worker ---
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register(serviceWorkerUrl, { type: 'module' })
       .then(registration => {
         console.log('Service Worker зарегистрирован успешно, scope:', registration.scope);
       })
