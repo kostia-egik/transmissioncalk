@@ -1,6 +1,9 @@
 import React from 'react';
 import { InfoIcon } from '../../assets/icons/InfoIcon';
 import { FolderIcon } from '../../assets/icons/FolderIcon';
+import { AuthWidget } from '../AuthWidget';
+import { LanguageSwitcher } from '../LanguageSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const EraserIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" className="w-6 h-6" fill="currentColor">
@@ -23,6 +26,7 @@ interface SchemeBuilderHeaderProps {
 }
 
 export const SchemeBuilderHeader: React.FC<SchemeBuilderHeaderProps> = ({ onBack, onOpenInfoModal, onResetScheme, onOpenProjectModal }) => {
+    const { t } = useLanguage();
     const buttonClass = "p-2 bg-white/80 backdrop-blur-sm text-gray-700 border border-gray-300 rounded-full shadow-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500";
 
     return (
@@ -32,25 +36,27 @@ export const SchemeBuilderHeader: React.FC<SchemeBuilderHeaderProps> = ({ onBack
                     id="back-to-workbench-btn"
                     onClick={onBack} 
                     className={buttonClass}
-                    title="Назад к расчетам"
-                    aria-label="Назад к расчетам"
+                    title={t('scheme_header_back_tooltip')}
+                    aria-label={t('scheme_header_back_aria_label')}
                 >
                     <BackArrowIcon />
                 </button>
-                <span className="text-sm font-semibold text-gray-700 bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full shadow">Сборщик схем</span>
+                <span className="text-sm font-semibold text-gray-700 bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full shadow">{t('scheme_header_title')}</span>
             </div>
-            <div id="scheme-header-controls" className="absolute top-2.5 right-2.5 z-20 flex flex-col space-y-2">
-                <button onClick={onOpenInfoModal} className={buttonClass} title="Справка" aria-label="Справка">
+            <div id="scheme-header-controls" className="absolute top-2.5 right-2.5 z-20 flex items-center space-x-2">
+                <LanguageSwitcher />
+                <AuthWidget displayMode="icon" />
+                <button onClick={onOpenInfoModal} className={buttonClass} title={t('header_info_tooltip')} aria-label={t('header_info_tooltip')}>
                     <InfoIcon />
                 </button>
-                <button onClick={onResetScheme} className={buttonClass} title="Сбросить схему к исходной" aria-label="Сбросить схему">
+                <button onClick={onResetScheme} className={buttonClass} title={t('scheme_header_reset_tooltip')} aria-label={t('scheme_header_reset_aria_label')}>
                     <EraserIcon />
                 </button>
                 <button
                     onClick={onOpenProjectModal}
                     className={buttonClass}
-                    title="Проект и Экспорт"
-                    aria-label="Проект и Экспорт"
+                    title={t('header_project_export_tooltip')}
+                    aria-label={t('header_project_export_tooltip')}
                 >
                     <FolderIcon />
                 </button>

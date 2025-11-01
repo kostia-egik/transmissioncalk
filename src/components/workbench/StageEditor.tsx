@@ -1,30 +1,34 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { StageCalculationData, ModuleCalculationData, GearType, ModuleSpecificInputs, PlanetaryConfig, BevelGearConfigType, WormGearConfigType } from '../../types';
+import { StageCalculationData, ModuleCalculationData, GearType, ModuleSpecificInputs, PlanetaryConfig, BevelGearConfigType, WormGearConfigType, ValidationMessage } from '../../types';
 import Button from '../Button';
 import { ModuleCard } from './ModuleCard';
 import { ERROR_BG_COLOR, ERROR_TEXT_COLOR, EFFICIENCY_DATABASE } from '../../constants';
 import { TooltipContent } from '../../tooltip-data';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const PlusIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>);
 const CrossIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>);
 
-const AddStageSeparator: React.FC<{ onClick: () => void; className?: string }> = ({ onClick, className }) => (
-    <div className={`relative h-8 my-4 ${className || ''}`}>
-        <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t-2 border-dashed border-gray-300"></div>
+const AddStageSeparator: React.FC<{ onClick: () => void; className?: string }> = ({ onClick, className }) => {
+    const { t } = useLanguage();
+    return (
+        <div className={`relative h-8 my-4 ${className || ''}`}>
+            <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t-2 border-dashed border-gray-300"></div>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+                <button
+                    onClick={onClick}
+                    className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-500 rounded-full border-2 border-dashed border-gray-300 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-500 transition-all transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    title={t('workbench_add_stage_here')}
+                    aria-label={t('workbench_add_new_stage')}
+                >
+                    <PlusIcon />
+                </button>
+            </div>
         </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-            <button
-                onClick={onClick}
-                className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-500 rounded-full border-2 border-dashed border-gray-300 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-500 transition-all transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                title="Добавить ступень здесь"
-                aria-label="Добавить новую ступень в этом месте"
-            >
-                <PlusIcon />
-            </button>
-        </div>
-    </div>
-);
+    );
+};
 
 interface StageEditorProps {
     stage: StageCalculationData;
@@ -40,10 +44,17 @@ interface StageEditorProps {
     showNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
 }
 
+const resolveValidationMessage = (message: ValidationMessage | undefined, t: (key: any, replacements?: any) => string): string | undefined => {
+    if (!message) return undefined;
+    if (typeof message === 'string') return message;
+    return t(message.key as any, message.replacements);
+};
+
 export const StageEditor: React.FC<StageEditorProps> = React.memo(({
     stage, stageIndex, calculationData, onCalculationDataChange, addStage, handleParamClick, scrollToModuleId, onScrollComplete,
     highlightedModuleId, highlightPriority, showNotification
 }) => {
+    const { t } = useLanguage();
     const [expandedStages, setExpandedStages] = useState<Record<string, boolean>>({});
     const [lastEditedField, setLastEditedField] = useState<{ moduleId: string; field: string } | null>(null);
     const [successfulFields, setSuccessfulFields] = useState<Set<string>>(new Set());
@@ -148,12 +159,12 @@ export const StageEditor: React.FC<StageEditorProps> = React.memo(({
 
     const removeStage = useCallback((sIndex: number) => {
         const newData = calculationData.filter((_, i) => i !== sIndex)
-            .map((s, i) => ({ ...s, stageName: `Валы ${i + 1} и ${i + 2}` }));
+            .map((s, i) => ({ ...s, stageName: t('workbench_stage_name', { stage: i + 1, nextStage: i + 2 }) }));
         if (newData.length === 0) {
             localStorage.removeItem('autosave-transmission-project');
         }
         onCalculationDataChange(newData);
-    }, [calculationData, onCalculationDataChange]);
+    }, [calculationData, onCalculationDataChange, t]);
 
     const addGearVariant = useCallback((sIndex: number) => {
         const currentStage = calculationData[sIndex];
@@ -230,11 +241,11 @@ export const StageEditor: React.FC<StageEditorProps> = React.memo(({
         const stageContainsSingleOnlyModule = newData[sIndex].modules.some((m, idx) => singleOnlyTypes.includes(m.type) && idx !== mIndex);
 
         if (pastedTypeIsSingleOnly && stageHasOtherModules) {
-            showNotification('Нельзя вставить поворотную/планетарную передачу на ступень с несколькими вариантами.', 'error');
+            showNotification(t('notification_paste_error_single_only'), 'error');
             return;
         }
         if (!pastedTypeIsSingleOnly && stageContainsSingleOnlyModule) {
-            showNotification('Нельзя вставить этот тип передачи на ступень, где уже есть поворотная/планетарная.', 'error');
+            showNotification(t('notification_paste_error_parallel_on_single'), 'error');
             return;
         }
 
@@ -242,23 +253,24 @@ export const StageEditor: React.FC<StageEditorProps> = React.memo(({
         moduleToUpdate.inputs = pastedData.inputs;
         
         onCalculationDataChange(newData);
-    }, [calculationData, onCalculationDataChange, showNotification]);
+    }, [calculationData, onCalculationDataChange, showNotification, t]);
 
     const singleOnlyTypes: GearType[] = [GearType.Planetary, GearType.Bevel, GearType.Worm];
     const hasSingleTypeModuleInStage = stage.modules.some(m => singleOnlyTypes.includes(m.type));
     const isAddVariantDisabled = stage.modules.length > 0 && hasSingleTypeModuleInStage;
+    const resolvedStageError = resolveValidationMessage(stage.stageError, t);
 
     return (
         <div key={stage.id} ref={stageRef}>
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-slate-700">{stage.stageName}</h3>
                 {calculationData.length > 1 && (
-                    <Button onClick={() => removeStage(stageIndex)} variant="secondary" className="!p-2 text-sm leading-none shadow-md shadow-slate-900/40" title={`Удалить ступень ${stageIndex + 1}`}>
+                    <Button onClick={() => removeStage(stageIndex)} variant="secondary" className="!p-2 text-sm leading-none shadow-md shadow-slate-900/40" title={t('workbench_delete_stage', { stageIndex: stageIndex + 1 })}>
                         <CrossIcon />
                     </Button>
                 )}
             </div>
-            {stage.stageError && <p className={`mb-2 p-2 rounded-md ${ERROR_BG_COLOR} ${ERROR_TEXT_COLOR} text-sm`}>{stage.stageError}</p>}
+            {resolvedStageError && <p className={`mb-2 p-2 rounded-md ${ERROR_BG_COLOR} ${ERROR_TEXT_COLOR} text-sm`}>{resolvedStageError}</p>}
             <div className="overflow-x-auto -mx-4 sm:-mx-6">
                 <div className="flex space-x-4 px-4 sm:px-6 py-2">
                     {stage.modules.map((moduleData, moduleIndex) => (
@@ -295,9 +307,9 @@ export const StageEditor: React.FC<StageEditorProps> = React.memo(({
                             onClick={() => addGearVariant(stageIndex)} 
                             variant="secondary" 
                             className="text-sm px-3 py-1.5 flex items-center h-full shadow-md shadow-slate-900/40" 
-                            disabled={isAddVariantDisabled} title={isAddVariantDisabled ? "Планетарная, коническая или червячная передача должна быть единственной на ступени." : "Добавить вариант передачи"}>
+                            disabled={isAddVariantDisabled} title={isAddVariantDisabled ? t('workbench_add_variant_disabled_tooltip') : t('workbench_add_variant_tooltip')}>
                             <PlusIcon />
-                            Добавить
+                            {t('common_add')}
                         </Button>
                     </div>
                 </div>

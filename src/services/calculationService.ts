@@ -1,6 +1,6 @@
 
 
-import { EngineParams, StageCalculationData, FinalCalculationResults, GearType, ModuleSpecificInputs, GearInputParams, ChainInputParams, PlanetaryInputParams, PlanetaryShaftType, RotationDirection, CalculationOutput, ToothedBeltInputParams, BeltInputParams, BevelGearInputParams, BevelGearConfigType, WormGearInputParams, ShaftOrientation, WormGearConfigType, PlanetaryConfig, PLANETARY_CONFIG_MAP } from '../types';
+import { EngineParams, StageCalculationData, FinalCalculationResults, GearType, ModuleSpecificInputs, GearInputParams, ChainInputParams, PlanetaryInputParams, PlanetaryShaftType, RotationDirection, CalculationOutput, ToothedBeltInputParams, BeltInputParams, BevelGearInputParams, BevelGearConfigType, WormGearInputParams, ShaftOrientation, WormGearConfigType, PlanetaryConfig, PLANETARY_CONFIG_MAP, ValidationMessage } from '../types';
 
 // Helper to parse numeric input robustly
 const parseNumeric = (value: string | number | undefined): number | null => {
@@ -22,8 +22,8 @@ export const calculateSingleModule = (
   output.outDirection = inDirection; 
   output.outOrientation = inShaftOrientation; // Default: maintain orientation
 
-  const errors: Record<string, string> = {};
-  const warnings: Record<string, string> = {};
+  const errors: Record<string, ValidationMessage> = {};
+  const warnings: Record<string, ValidationMessage> = {};
 
   const baseReturn = {
     u: 0,
@@ -39,21 +39,21 @@ export const calculateSingleModule = (
       const z2 = parseNumeric(z2Str);
       const m = parseNumeric(mStr);
       
-      if (z1 === null) errors.z1 = "Обязательное поле";
-      if (z2 === null) errors.z2 = "Обязательное поле";
-      if (m === null) errors.m = "Обязательное поле";
+      if (z1 === null) errors.z1 = { key: "validation_required_field" };
+      if (z2 === null) errors.z2 = { key: "validation_required_field" };
+      if (m === null) errors.m = { key: "validation_required_field" };
       
       if (z1 !== null) {
-          if (!Number.isInteger(z1)) errors.z1 = "Требуется целое число";
-          else if (z1 < 3) errors.z1 = "z₁ должно быть ≥ 3";
-          else if (z1 < 17) warnings.z1 = "Подрезка зуба (z₁ < 17)";
+          if (!Number.isInteger(z1)) errors.z1 = { key: "validation_integer_required" };
+          else if (z1 < 3) errors.z1 = { key: "validation_z1_min_3" };
+          else if (z1 < 17) warnings.z1 = { key: "validation_undercut_z1" };
       }
       if (z2 !== null) {
-          if (!Number.isInteger(z2)) errors.z2 = "Требуется целое число";
-          else if (z2 < 3) errors.z2 = "z₂ должно быть ≥ 3";
-          else if (z2 < 17) warnings.z2 = "Подрезка зуба (z₂ < 17)";
+          if (!Number.isInteger(z2)) errors.z2 = { key: "validation_integer_required" };
+          else if (z2 < 3) errors.z2 = { key: "validation_z2_min_3" };
+          else if (z2 < 17) warnings.z2 = { key: "validation_undercut_z2" };
       }
-      if (m !== null && m <= 0) errors.m = "m должно быть > 0";
+      if (m !== null && m <= 0) errors.m = { key: "validation_m_positive" };
 
       // --- Contact Ratio (εα) Calculation ---
       if (z1 !== null && z2 !== null && m !== null && m > 0 && Number.isInteger(z1) && Number.isInteger(z2) && z1 >= 3 && z2 >= 3) {
@@ -83,11 +83,11 @@ export const calculateSingleModule = (
                 output.epsilonAlpha = epsilonAlpha;
 
                 if (epsilonAlpha <= 1) {
-                    errors.z1 = "Перекрытие ≤ 1, передача неработоспособна";
-                    errors.z2 = "Перекрытие ≤ 1, передача неработоспособна";
+                    errors.z1 = { key: "validation_contact_ratio_le_1" };
+                    errors.z2 = { key: "validation_contact_ratio_le_1" };
                 } else if (epsilonAlpha <= 1.2) {
-                    warnings.z1 = `Малое перекрытие (εα ≈ ${epsilonAlpha.toFixed(2)}), возможен шум`;
-                    warnings.z2 = `Малое перекрытие (εα ≈ ${epsilonAlpha.toFixed(2)}), возможен шум`;
+                    warnings.z1 = { key: "validation_contact_ratio_le_1_2", replacements: { value: epsilonAlpha.toFixed(2) }};
+                    warnings.z2 = { key: "validation_contact_ratio_le_1_2", replacements: { value: epsilonAlpha.toFixed(2) }};
                 }
             }
         }
@@ -116,21 +116,21 @@ export const calculateSingleModule = (
       const z2 = parseNumeric(z2Str);
       const p = parseNumeric(pStr);
 
-      if (z1 === null) errors.z1 = "Обязательное поле";
-      if (z2 === null) errors.z2 = "Обязательное поле";
-      if (p === null) errors.p = "Обязательное поле";
+      if (z1 === null) errors.z1 = { key: "validation_required_field" };
+      if (z2 === null) errors.z2 = { key: "validation_required_field" };
+      if (p === null) errors.p = { key: "validation_required_field" };
 
       if (z1 !== null) {
-          if (!Number.isInteger(z1)) errors.z1 = "Требуется целое число";
-          else if (z1 < 3) errors.z1 = "z₁ должно быть ≥ 3";
-          else if (z1 < 17) warnings.z1 = "Малое число зубьев, возможны пульсации скорости";
+          if (!Number.isInteger(z1)) errors.z1 = { key: "validation_integer_required" };
+          else if (z1 < 3) errors.z1 = { key: "validation_z1_min_3" };
+          else if (z1 < 17) warnings.z1 = { key: "validation_chain_small_z" };
       }
       if (z2 !== null) {
-          if (!Number.isInteger(z2)) errors.z2 = "Требуется целое число";
-          else if (z2 < 3) errors.z2 = "z₂ должно быть ≥ 3";
-          else if (z2 < 17) warnings.z2 = "Малое число зубьев, возможны пульсации скорости";
+          if (!Number.isInteger(z2)) errors.z2 = { key: "validation_integer_required" };
+          else if (z2 < 3) errors.z2 = { key: "validation_z2_min_3" };
+          else if (z2 < 17) warnings.z2 = { key: "validation_chain_small_z" };
       }
-      if (p !== null && p <= 0) errors.p = "p должно быть > 0";
+      if (p !== null && p <= 0) errors.p = { key: "validation_p_positive" };
       if (Object.keys(errors).length > 0) return { ...baseReturn, validationState: { errors, warnings } };
 
       const PI = Math.PI;
@@ -149,26 +149,26 @@ export const calculateSingleModule = (
       const zRing = parseNumeric(zRingStr);
       const m = parseNumeric(mStr);
 
-      if (zSun === null) errors.zSun = "Обязательное поле";
-      if (zRing === null) errors.zRing = "Обязательное поле";
-      if (m === null) errors.m = "Обязательное поле";
-      if (shaftConfig === "") errors.shaftConfig = "Не выбрана конфигурация";
+      if (zSun === null) errors.zSun = { key: "validation_required_field" };
+      if (zRing === null) errors.zRing = { key: "validation_required_field" };
+      if (m === null) errors.m = { key: "validation_required_field" };
+      if (shaftConfig === "") errors.shaftConfig = { key: "validation_config_not_selected" };
 
       if (zSun !== null) {
-          if (!Number.isInteger(zSun)) errors.zSun = "Требуется целое число";
-          else if (zSun < 3) errors.zSun = "zСолнца ≥ 3";
+          if (!Number.isInteger(zSun)) errors.zSun = { key: "validation_integer_required" };
+          else if (zSun < 3) errors.zSun = { key: "validation_z_sun_min_3" };
       }
       if (zRing !== null) {
-          if (!Number.isInteger(zRing)) errors.zRing = "Требуется целое число";
-          else if (zRing < 3) errors.zRing = "zКороны ≥ 3";
+          if (!Number.isInteger(zRing)) errors.zRing = { key: "validation_integer_required" };
+          else if (zRing < 3) errors.zRing = { key: "validation_z_ring_min_3" };
       }
-      if (m !== null && m <= 0) errors.m = "m > 0";
+      if (m !== null && m <= 0) errors.m = { key: "validation_m_positive" };
 
       if (Object.keys(errors).length > 0) return { ...baseReturn, validationState: { errors, warnings } };
       
       const shaftMap = PLANETARY_CONFIG_MAP[shaftConfig as PlanetaryConfig];
       if (!shaftMap) {
-          errors.shaftConfig = "Неверная конфигурация";
+          errors.shaftConfig = { key: "validation_invalid_config" };
           return { ...baseReturn, validationState: { errors, warnings } };
       }
       const { in: inShaft, out: outShaft } = shaftMap;
@@ -181,8 +181,8 @@ export const calculateSingleModule = (
 
       if (zPlanet < 3 || zPlanet !== Math.floor(zPlanet)) {
         output.assemblyPossible = false;
-        errors.zSun = "СБОРКА НЕВОЗМОЖНА (z Сателлита < 3 или не целое)";
-        errors.zRing = "СБОРКА НЕВОЗМОЖНА (z Сателлита < 3 или не целое)";
+        errors.zSun = { key: "validation_assembly_impossible_planet_z" };
+        errors.zRing = { key: "validation_assembly_impossible_planet_z" };
       } else {
         output.planetary_dPlanet = m! * zPlanet;
         output.planetary_a = (output.planetary_dSun + output.planetary_dPlanet) / 2;
@@ -191,14 +191,14 @@ export const calculateSingleModule = (
         output.fixedShaft = shafts.find(s => s !== inShaft && s !== outShaft) || "Не определен";
 
         // Undercutting and Interference Checks
-        if (zSun! < 17) warnings.zSun = "Подрезка зуба (z < 17)";
+        if (zSun! < 17) warnings.zSun = { key: "validation_undercut_z" };
         if (zPlanet < 17) {
-            warnings.zSun = "Подрезка зуба сателлита (z < 17)";
-            warnings.zRing = "Подрезка зуба сателлита (z < 17)";
+            warnings.zSun = { key: "validation_undercut_planet_z" };
+            warnings.zRing = { key: "validation_undercut_planet_z" };
         }
         if ((zRing! - zPlanet) < 10) {
-            warnings.zRing = "Малая разница зубьев (zR-zP < 10), возможна интерференция";
-            warnings.zSun = "Малая разница зубьев (zR-zP < 10), возможна интерференция";
+            warnings.zRing = { key: "validation_interference_z_diff" };
+            warnings.zSun = { key: "validation_interference_z_diff" };
         }
         
         // Contact Ratio Calculations
@@ -222,9 +222,9 @@ export const calculateSingleModule = (
             output.epsilon_sp = epsilon_sp;
 
             if (epsilon_sp <= 1) {
-                errors.zSun = `Перекрытие S-P ≤ 1 (${epsilon_sp.toFixed(2)}), неработоспособно`;
+                errors.zSun = { key: "validation_contact_ratio_sp_le_1", replacements: { value: epsilon_sp.toFixed(2) }};
             } else if (epsilon_sp <= 1.2) {
-                warnings.zSun = `Малое перекрытие S-P (εα ≈ ${epsilon_sp.toFixed(2)}), возможен шум`;
+                warnings.zSun = { key: "validation_contact_ratio_sp_le_1_2", replacements: { value: epsilon_sp.toFixed(2) }};
             }
         }
 
@@ -240,9 +240,9 @@ export const calculateSingleModule = (
             output.epsilon_pr = epsilon_pr;
             
             if (epsilon_pr <= 1) {
-                errors.zRing = `Перекрытие P-R ≤ 1 (${epsilon_pr.toFixed(2)}), неработоспособно`;
+                errors.zRing = { key: "validation_contact_ratio_pr_le_1", replacements: { value: epsilon_pr.toFixed(2) }};
             } else if (epsilon_pr <= 1.2) {
-                warnings.zRing = `Малое перекрытие P-R (εα ≈ ${epsilon_pr.toFixed(2)}), возможен шум`;
+                warnings.zRing = { key: "validation_contact_ratio_pr_le_1_2", replacements: { value: epsilon_pr.toFixed(2) }};
             }
         }
 
@@ -267,21 +267,21 @@ export const calculateSingleModule = (
       const z2 = parseNumeric(z2Str);
       const p = parseNumeric(pStr);
       
-      if (z1 === null) errors.z1 = "Обязательное поле";
-      if (z2 === null) errors.z2 = "Обязательное поле";
-      if (p === null) errors.p = "Обязательное поле";
+      if (z1 === null) errors.z1 = { key: "validation_required_field" };
+      if (z2 === null) errors.z2 = { key: "validation_required_field" };
+      if (p === null) errors.p = { key: "validation_required_field" };
 
       if (z1 !== null) {
-          if (!Number.isInteger(z1)) errors.z1 = "Требуется целое число";
-          else if (z1 < 3) errors.z1 = "z₁ должно быть ≥ 3";
-          else if (z1 < 12) warnings.z1 = "z₁ < 12, возможен пропуск зуба/износ";
+          if (!Number.isInteger(z1)) errors.z1 = { key: "validation_integer_required" };
+          else if (z1 < 3) errors.z1 = { key: "validation_z1_min_3" };
+          else if (z1 < 12) warnings.z1 = { key: "validation_tb_z1_min_12" };
       }
       if (z2 !== null) {
-          if (!Number.isInteger(z2)) errors.z2 = "Требуется целое число";
-          else if (z2 < 3) errors.z2 = "z₂ должно быть ≥ 3";
-          else if (z2 < 12) warnings.z2 = "z₂ < 12, возможен пропуск зуба/износ";
+          if (!Number.isInteger(z2)) errors.z2 = { key: "validation_integer_required" };
+          else if (z2 < 3) errors.z2 = { key: "validation_z2_min_3" };
+          else if (z2 < 12) warnings.z2 = { key: "validation_tb_z2_min_12" };
       }
-      if (p !== null && p <= 0) errors.p = "p > 0";
+      if (p !== null && p <= 0) errors.p = { key: "validation_p_positive" };
 
       if (Object.keys(errors).length > 0) return { ...baseReturn, validationState: { errors, warnings } };
       
@@ -298,10 +298,10 @@ export const calculateSingleModule = (
       const d1 = parseNumeric(d1Str);
       const d2 = parseNumeric(d2Str);
 
-      if (d1 === null) errors.d1 = "Обязательное поле";
-      if (d2 === null) errors.d2 = "Обязательное поле";
-      if (d1 !== null && d1 <= 0) errors.d1 = "d₁ > 0";
-      if (d2 !== null && d2 <= 0) errors.d2 = "d₂ > 0";
+      if (d1 === null) errors.d1 = { key: "validation_required_field" };
+      if (d2 === null) errors.d2 = { key: "validation_required_field" };
+      if (d1 !== null && d1 <= 0) errors.d1 = { key: "validation_d1_positive" };
+      if (d2 !== null && d2 <= 0) errors.d2 = { key: "validation_d2_positive" };
 
       if (Object.keys(errors).length > 0) return { ...baseReturn, validationState: { errors, warnings } };
       
@@ -319,22 +319,22 @@ export const calculateSingleModule = (
       const m = parseNumeric(mStr);
       const b = parseNumeric(bStr);
       
-      if (z1 === null) errors.z1 = "Обязательное поле";
-      if (z2 === null) errors.z2 = "Обязательное поле";
-      if (m === null) errors.m = "Обязательное поле";
-      if (b === null) errors.b = "Обязательное поле";
-      if (config === "") errors.config = "Не выбран тип";
+      if (z1 === null) errors.z1 = { key: "validation_required_field" };
+      if (z2 === null) errors.z2 = { key: "validation_required_field" };
+      if (m === null) errors.m = { key: "validation_required_field" };
+      if (b === null) errors.b = { key: "validation_required_field" };
+      if (config === "") errors.config = { key: "validation_type_not_selected" };
       
       if (z1 !== null) {
-        if (!Number.isInteger(z1)) errors.z1 = "Требуется целое число";
-        else if (z1 < 3) errors.z1 = "z₁ ≥ 3";
+        if (!Number.isInteger(z1)) errors.z1 = { key: "validation_integer_required" };
+        else if (z1 < 3) errors.z1 = { key: "validation_z1_min_3" };
       }
       if (z2 !== null) {
-        if (!Number.isInteger(z2)) errors.z2 = "Требуется целое число";
-        else if (z2 < 3) errors.z2 = "z₂ ≥ 3";
+        if (!Number.isInteger(z2)) errors.z2 = { key: "validation_integer_required" };
+        else if (z2 < 3) errors.z2 = { key: "validation_z2_min_3" };
       }
-      if (m !== null && m <= 0) errors.m = "m > 0";
-      if (b !== null && b <= 0) errors.b = "b > 0";
+      if (m !== null && m <= 0) errors.m = { key: "validation_m_positive" };
+      if (b !== null && b <= 0) errors.b = { key: "validation_b_positive" };
 
        // --- Contact Ratio (εα) for equivalent spur gear ---
        if (z1 !== null && z2 !== null && m !== null && m > 0 && Number.isInteger(z1) && Number.isInteger(z2) && z1 >= 3 && z2 >= 3) {
@@ -344,10 +344,10 @@ export const calculateSingleModule = (
           const zv2 = z2 / Math.cos(delta2_rad_calc);
 
           if (zv1 < 17) {
-              warnings.z1 = `Подрезка зуба (эквив. zᵥ₁ ≈ ${zv1.toFixed(1)} < 17)`;
+              warnings.z1 = { key: "validation_undercut_bevel_z1", replacements: { value: zv1.toFixed(1) }};
           }
           if (zv2 < 17) {
-              warnings.z2 = `Подрезка зуба (эквив. zᵥ₂ ≈ ${zv2.toFixed(1)} < 17)`;
+              warnings.z2 = { key: "validation_undercut_bevel_z2", replacements: { value: zv2.toFixed(1) }};
           }
 
           const alpha = 20 * (Math.PI / 180);
@@ -371,11 +371,11 @@ export const calculateSingleModule = (
                   const epsilonAlpha = ga / pb;
                   output.bevel_epsilonAlpha = epsilonAlpha;
                   if (epsilonAlpha <= 1) {
-                      errors.z1 = `Перекрытие εα ≤ 1 (${epsilonAlpha.toFixed(2)}), неработоспособно`;
-                      errors.z2 = `Перекрытие εα ≤ 1 (${epsilonAlpha.toFixed(2)}), неработоспособно`;
+                      errors.z1 = { key: "validation_contact_ratio_bevel_le_1", replacements: { value: epsilonAlpha.toFixed(2) }};
+                      errors.z2 = { key: "validation_contact_ratio_bevel_le_1", replacements: { value: epsilonAlpha.toFixed(2) }};
                   } else if (epsilonAlpha <= 1.2) {
-                      warnings.z1 = `Малое перекрытие (εα ≈ ${epsilonAlpha.toFixed(2)}), возможен шум`;
-                      warnings.z2 = `Малое перекрытие (εα ≈ ${epsilonAlpha.toFixed(2)}), возможен шум`;
+                      warnings.z1 = { key: "validation_contact_ratio_bevel_le_1_2", replacements: { value: epsilonAlpha.toFixed(2) }};
+                      warnings.z2 = { key: "validation_contact_ratio_bevel_le_1_2", replacements: { value: epsilonAlpha.toFixed(2) }};
                   }
               }
           }
@@ -397,7 +397,7 @@ export const calculateSingleModule = (
       output.bevel_Re = (m! / 2) * Math.sqrt(z1!**2 + z2!**2);
       
       if (b! > 0.35 * output.bevel_Re) {
-         warnings.b = "Ширина венца велика (b > 0.35*Re)";
+         warnings.b = { key: "validation_bevel_b_large" };
       }
       output.bevel_dm1 = d1 - b! * Math.sin(delta1_rad);
       output.bevel_dm2 = d2 - b! * Math.sin(delta2_rad);
@@ -425,23 +425,23 @@ export const calculateSingleModule = (
         const m = parseNumeric(mStr);   
         const q = parseNumeric(qStr);   
         
-        if (z1 === null) errors.z1 = "Обязательное поле";
-        if (z2 === null) errors.z2 = "Обязательное поле";
-        if (m === null) errors.m = "Обязательное поле";
-        if (q === null) errors.q = "Обязательное поле";
-        if (wormConfig === "") errors.config = "Не выбран тип";
+        if (z1 === null) errors.z1 = { key: "validation_required_field" };
+        if (z2 === null) errors.z2 = { key: "validation_required_field" };
+        if (m === null) errors.m = { key: "validation_required_field" };
+        if (q === null) errors.q = { key: "validation_required_field" };
+        if (wormConfig === "") errors.config = { key: "validation_type_not_selected" };
 
         if (z1 !== null) {
-          if (!Number.isInteger(z1)) errors.z1 = "Требуется целое число";
-          else if (z1 < 1) errors.z1 = "z₁ (заходы) ≥ 1";
-          else if (z1 > 4) warnings.z1 = "z₁ > 4 не рекомендуется";
+          if (!Number.isInteger(z1)) errors.z1 = { key: "validation_integer_required" };
+          else if (z1 < 1) errors.z1 = { key: "validation_worm_z1_min_1" };
+          else if (z1 > 4) warnings.z1 = { key: "validation_worm_z1_gt_4" };
         }
         if (z2 !== null) {
-          if (!Number.isInteger(z2)) errors.z2 = "Требуется целое число";
-          else if (z2 < 26) warnings.z2 = "z₂ < 26 не рекомендуется";
+          if (!Number.isInteger(z2)) errors.z2 = { key: "validation_integer_required" };
+          else if (z2 < 26) warnings.z2 = { key: "validation_worm_z2_lt_26" };
         }
-        if (m !== null && m <= 0) errors.m = "m > 0";
-        if (q !== null && q <= 0) errors.q = "q > 0";
+        if (m !== null && m <= 0) errors.m = { key: "validation_m_positive" };
+        if (q !== null && q <= 0) errors.q = { key: "validation_q_positive" };
         
         if (Object.keys(errors).length > 0) return { ...baseReturn, validationState: { errors, warnings } };
 
@@ -464,7 +464,7 @@ export const calculateSingleModule = (
         break;
     }
     default:
-        errors.type = `Неизвестный тип передачи: ${moduleType}`;
+        errors.type = { key: "validation_unknown_gear_type", replacements: { type: moduleType } };
         return { ...baseReturn, validationState: { errors, warnings } };
   }
 
@@ -495,7 +495,8 @@ export const calculateSingleModule = (
 
 export const calculateCascade = (
   engineParams: EngineParams,
-  calculationData: StageCalculationData[]
+  calculationData: StageCalculationData[],
+  t: (key: any, replacements?: Record<string, string | number>) => string
 ): { results: FinalCalculationResults | null; updatedCalculationData: StageCalculationData[]; error?: string } => {
   
   const updatedData = structuredClone(calculationData);
@@ -537,9 +538,9 @@ export const calculateCascade = (
 
     if (!selectedModule) {
       if (stage.modules.length > 0) { 
-        const errorMsg = `На ступени ${stage.stageName} не выбрана передача.`;
+        const errorMsg = t('cascade_error_no_selection', { stageName: stage.stageName });
         overallError = overallError ? `${overallError}\n${errorMsg}` : errorMsg;
-        stage.stageError = `Не выбрана передача на ступени: ${stage.stageName.replace("Валы ", "").replace(" и ", "-")}`;
+        stage.stageError = { key: 'stage_error_no_selection_short', replacements: { stageName: stage.stageName.replace("Валы ", "").replace(" и ", "-") } };
       }
       continue; 
     }
@@ -551,8 +552,13 @@ export const calculateCascade = (
     const errors = selectedModule.validationState?.errors ?? {};
 
     if (Object.keys(errors).length > 0) {
-        const errorMsg = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join(', ');
-        overallError = overallError ? `${overallError}\nОшибка на ступени ${stage.stageName} (${selectedModule.type}): ${errorMsg}` : `Ошибка на ступени ${stage.stageName} (${selectedModule.type}): ${errorMsg}`;
+        const errorDetails = Object.entries(errors).map(([field, msg]) => {
+          const translatedMsg = typeof msg === 'string' ? msg : t(msg.key, msg.replacements);
+          return `${field}: ${translatedMsg}`;
+        }).join('; ');
+        const typedModuleType = t(`gear_type_${selectedModule.type}` as any);
+        const errorMsg = t('cascade_error_on_stage', { stageName: stage.stageName, moduleType: typedModuleType, error: errorDetails });
+        overallError = overallError ? `${overallError}\n${errorMsg}` : errorMsg;
         canProceedWithCascade = false;
     }
 
@@ -560,16 +566,22 @@ export const calculateCascade = (
     const eta = parseNumeric(etaStr);
 
     if (eta === null || isNaN(eta) || eta < 0 || eta > 1) {
-        const errorMsg = "КПД должен быть числом от 0.0 до 1.0.";
+        const errorMsg: ValidationMessage = { key: "validation_eta_range" };
         selectedModule.validationState = { ...selectedModule.validationState, errors: { ...errors, eta: errorMsg }};
-        overallError = overallError ? `${overallError}\nОшибка КПД на ступени ${stage.stageName} (${selectedModule.type}): ${errorMsg}` : `Ошибка КПД на ступени ${stage.stageName} (${selectedModule.type}): ${errorMsg}`;
+        const typedModuleType = t(`gear_type_${selectedModule.type}` as any);
+        const etaErrorMsg = t(errorMsg.key);
+        const fullErrorMsg = t('cascade_error_eta', { stageName: stage.stageName, moduleType: typedModuleType, error: etaErrorMsg });
+        overallError = overallError ? `${overallError}\n${fullErrorMsg}` : fullErrorMsg;
         canProceedWithCascade = false;
     }
     
     if (canProceedWithCascade && selectedModule.u === 0 && Object.keys(errors).length === 0) { 
-        const errorMsg = "Передаточное отношение равно 0. Проверьте параметры.";
+        const errorMsg: ValidationMessage = { key: "validation_u_is_zero" };
         selectedModule.validationState = { ...selectedModule.validationState, errors: { ...errors, u: errorMsg }};
-        overallError = overallError ? `${overallError}\nОшибка u=0 на ступени ${stage.stageName} (${selectedModule.type}): ${errorMsg}` : `Ошибка u=0 на ступени ${stage.stageName} (${selectedModule.type}): ${errorMsg}`;
+        const typedModuleType = t(`gear_type_${selectedModule.type}` as any);
+        const uZeroErrorMsg = t(errorMsg.key);
+        const fullErrorMsg = t('cascade_error_u_is_zero', { stageName: stage.stageName, moduleType: typedModuleType, error: uZeroErrorMsg });
+        overallError = overallError ? `${overallError}\n${fullErrorMsg}` : fullErrorMsg;
         canProceedWithCascade = false;
     }
     

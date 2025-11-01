@@ -8,6 +8,7 @@ import { getGearCategory } from '../utils/gear';
 import { EngineParamsEditor } from '../components/workbench/EngineParamsEditor';
 import { StageEditor } from '../components/workbench/StageEditor';
 import { FinalResultsDisplay } from '../components/workbench/FinalResultsDisplay';
+import { useLanguage } from '../contexts/LanguageContext';
 
 
 interface WorkbenchPageProps {
@@ -29,19 +30,22 @@ interface WorkbenchPageProps {
   onScrollComplete: () => void;
   setShowChangesDialog: (show: boolean) => void;
   confirmAction: (title: string, message: React.ReactNode, onConfirm: () => void, storageKey?: string) => void;
+  isViewingShared: boolean;
+  onOpenProjectModal: () => void;
 }
 
 const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
   engineParams, setEngineParams, resetEngineParams, calculationData, onCalculationDataChange,
   onResetConfiguration, finalResults, showFinalResults, isSchemeBuilt, onBuildNewScheme, onGoToSchemeView, 
   calculationDataSnapshot, showNotification, finalResultsRef, scrollToModuleId, onScrollComplete,
-  setShowChangesDialog, confirmAction
+  setShowChangesDialog, confirmAction, isViewingShared, onOpenProjectModal
 }) => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [activeTooltip, setActiveTooltip] = useState<{ content: TooltipContent; targetRect: DOMRect } | null>(null);
     const [highlightedModuleId, setHighlightedModuleId] = useState<string | null>(null);
     const [highlightPriority, setHighlightPriority] = useState(false);
     const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { t } = useLanguage();
 
     useEffect(() => {
         if (scrollToModuleId) {
@@ -114,26 +118,26 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
     
         const finalData = newData.map((stage, i) => ({
             ...stage,
-            stageName: `Валы ${i + 1} и ${i + 2}`
+            stageName: t('workbench_stage_name', { stage: i + 1, nextStage: i + 2 })
         }));
         onCalculationDataChange(finalData);
-    }, [calculationData, onCalculationDataChange]);
+    }, [calculationData, onCalculationDataChange, t]);
 
     const rotationIconPath = getRotationIconPath(engineParams.initialDirection, engineParams.initialOrientation);
-    const rotationIconAltText = `Направление: ${engineParams.initialDirection}, Ориетация: ${engineParams.initialOrientation === ShaftOrientation.Horizontal ? 'Горизонтальный' : 'Вертикальный'}`;
+    const rotationIconAltText = `${t('module_cascade_direction')}: ${engineParams.initialDirection}, ${t('module_cascade_orientation')}: ${engineParams.initialOrientation === ShaftOrientation.Horizontal ? t('orientation_horizontal') : t('orientation_vertical')}`;
 
     const handleBuildSchemeClick = useCallback(() => {
         if (isSchemeBuilt) {
             confirmAction(
-                'Перестроить схему?',
-                'Вы уверены, что хотите перестроить схему? Все ваши предыдущие изменения в компоновке будут потеряны.',
+                t('dialog_rebuild_scheme_title'),
+                t('dialog_rebuild_scheme_message'),
                 onBuildNewScheme,
                 'dontShowRebuildSchemeWarning'
             );
         } else {
             onBuildNewScheme();
         }
-    }, [isSchemeBuilt, onBuildNewScheme, confirmAction]);
+    }, [isSchemeBuilt, onBuildNewScheme, confirmAction, t]);
     
     const handleReturnClick = useCallback(() => {
         if (!calculationDataSnapshot) {
@@ -172,6 +176,16 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
                     onClose={handleCloseTooltip}
                 />
             )}
+
+            {isViewingShared && (
+                <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg shadow-md" role="alert">
+                    <p className="font-bold">{t('view_mode_title')}</p>
+                    <p>{t('view_mode_message')}</p>
+                    <Button onClick={onOpenProjectModal} className="mt-3 !py-1 !px-4 text-sm" variant="secondary">
+                        {t('view_mode_save_as_new')}
+                    </Button>
+                </div>
+            )}
             
             <EngineParamsEditor
                 id="engine-params-card"
@@ -184,7 +198,7 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
             />
 
             <div className="bg-white p-4 sm:p-6 rounded-lg shadow-xl shadow-slate-900/60">
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Ступени трансмиссии</h2>
+                <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('workbench_stages_title')}</h2>
                 <div id="stages-container">
                     {calculationData.map((stage, stageIndex) => (
                        <StageEditor
@@ -208,7 +222,7 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
 					onClick={onResetConfiguration} 
 					variant="secondary" 
 					className="text-sm shadow-md shadow-slate-900/40">
-                        Сбросить все
+                        {t('workbench_reset_all')}
                     </Button>
                 </div>
             </div>
@@ -219,9 +233,9 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
                         onClick={handleReturnClick} 
                         variant="primary"
                         className="flex-grow w-full md:w-auto md:flex-grow-0 order-2 md:order-1 shadow-xl shadow-slate-900/80"
-                        title="Вернуться к редактированию существующей схемы"
+                        title={t('tooltip_return_to_scheme')}
                     >
-                        Вернуться к Схеме
+                        {t('workbench_return_to_scheme')}
                     </Button>
                 )}
                 <Button 
@@ -229,9 +243,10 @@ const WorkbenchPage: React.FC<WorkbenchPageProps> = React.memo(({
                     onClick={handleBuildSchemeClick} 
                     variant="primary" 
                     className="flex-grow w-full md:w-auto md:flex-grow-0 order-1 md:order-2 shadow-xl shadow-slate-900/80"
-                    title={isSchemeBuilt ? "Пересоздать схему с нуля на основе текущих параметров" : "Собрать кинематическую схему на основе выбранных типов передач"}
+                    disabled={isViewingShared}
+                    title={isViewingShared ? t('tooltip_build_scheme_disabled') : (isSchemeBuilt ? t('tooltip_rebuild_scheme') : t('tooltip_build_scheme'))}
                 >
-                    {isSchemeBuilt ? 'Перестроить Схему (Сброс)' : 'Построить Схему'}
+                    {isSchemeBuilt ? t('workbench_rebuild_scheme') : t('workbench_build_scheme')}
                 </Button>
             </div>
 

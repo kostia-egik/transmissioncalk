@@ -13,7 +13,7 @@ export const bearingHorizontalSVG = `
 </svg>
 `;
 
-export const beltDriveSVG = `
+export const beltDriveSVG = (t: (key: string) => string) => `
 <svg
    width="150"
    height="110"
@@ -103,7 +103,7 @@ export const beltDriveSVG = `
        id="text7"><tspan
          x="40.675941"
          y="14.870775"
-         id="tspan8">ведущий шкив, d1</tspan></text>
+         id="tspan8">${t('ugo_text_driving_pulley_d1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -126,7 +126,7 @@ export const beltDriveSVG = `
          id="text7-8"><tspan
            x="40.675941"
            y="14.870775"
-           id="tspan8-8">ведомый шкив, d1</tspan></text>
+           id="tspan8-8">${t('ugo_text_driven_pulley_d2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -136,7 +136,7 @@ export const beltDriveSVG = `
 </svg>
 `;
 
-export const bevelGearConfig1SVG = `
+export const bevelGearConfig1SVG = (t: (key: string) => string) => `
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    width="220"
@@ -213,7 +213,7 @@ export const bevelGearConfig1SVG = `
        id="text7"><tspan
          x="40.675941"
          y="14.870775"
-         id="tspan8">ведушая шестерня, z1</tspan></text>
+         id="tspan8">${t('ugo_text_driving_gear_z1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -236,7 +236,7 @@ export const bevelGearConfig1SVG = `
          id="text7-8"><tspan
            x="40.675941"
            y="14.870775"
-           id="tspan8-8">ведомая шестерня, z2</tspan></text>
+           id="tspan8-8">${t('ugo_text_driven_gear_z2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -247,7 +247,7 @@ export const bevelGearConfig1SVG = `
 
 `;
 
-export const bevelGearConfig2SVG = `
+export const bevelGearConfig2SVG = (t: (key: string) => string) => `
 <svg
    width="220"
    height="110"
@@ -325,7 +325,7 @@ export const bevelGearConfig2SVG = `
        transform="scale(-1,1)"><tspan
          x="-183.45718"
          y="14.870775"
-         id="tspan8">ведушая шестерня, z1</tspan></text>
+         id="tspan8">${t('ugo_text_driving_gear_z1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -349,7 +349,7 @@ export const bevelGearConfig2SVG = `
          transform="scale(-1,1)"><tspan
            x="-195.81552"
            y="15.171618"
-           id="tspan8-8">ведомая шестерня, z2</tspan></text>
+           id="tspan8-8">${t('ugo_text_driven_gear_z2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -359,7 +359,7 @@ export const bevelGearConfig2SVG = `
 </svg>
 `;
 
-export const bevelGearConfig3SVG = `
+export const bevelGearConfig3SVG = (t: (key: string) => string) => `
 <svg
    width="220"
    height="110"
@@ -437,7 +437,7 @@ export const bevelGearConfig3SVG = `
        transform="scale(-1,1)"><tspan
          x="-183.45718"
          y="14.870775"
-         id="tspan8">ведушая шестерня, z1</tspan></text>
+         id="tspan8">${t('ugo_text_driving_gear_z1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -461,7 +461,7 @@ export const bevelGearConfig3SVG = `
          transform="scale(-1,1)"><tspan
            x="-195.81552"
            y="15.171618"
-           id="tspan8-8">ведомая шестерня, z2</tspan></text>
+           id="tspan8-8">${t('ugo_text_driven_gear_z2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -495,7 +495,7 @@ export const cardanShaftSVG = `
 </svg>
 `;
 
-export const chainDriveSVG = `
+export const chainDriveSVG = (t: (key: string) => string) => `
 <svg
    width="150"
    height="110"
@@ -535,7 +535,7 @@ export const chainDriveSVG = `
        id="text7"><tspan
          x="40.675941"
          y="14.870775"
-         id="tspan8">ведущяя звезда, z1</tspan></text>
+         id="tspan8">${t('ugo_text_driving_sprocket_z1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -558,7 +558,7 @@ export const chainDriveSVG = `
          id="text7-8"><tspan
            x="40.675941"
            y="14.870775"
-           id="tspan8-8">ведомая звезда, z1</tspan></text>
+           id="tspan8-8">${t('ugo_text_driven_sprocket_z2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -568,7 +568,7 @@ export const chainDriveSVG = `
 </svg>
 `;
 
-export const cylindricalGearSVG = `
+export const cylindricalGearSVG = (t: (key: string) => string) => `
 <svg
    width="200"
    height="110"
@@ -651,7 +651,7 @@ export const cylindricalGearSVG = `
        id="text7"><tspan
          x="40.675941"
          y="14.870775"
-         id="tspan8">ведущяя шестерня, z1</tspan></text>
+         id="tspan8">${t('ugo_text_driving_gear_z1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -674,7 +674,7 @@ export const cylindricalGearSVG = `
          id="text7-8"><tspan
            x="40.675941"
            y="14.870775"
-           id="tspan8-8">ведомая щестерня, z1</tspan></text>
+           id="tspan8-8">${t('ugo_text_driven_gear_z2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -684,7 +684,7 @@ export const cylindricalGearSVG = `
 </svg>
 `;
 
-export const planetaryGearFixedCarrierSVG = `
+export const planetaryGearFixedCarrierSVG = (t: (key: string) => string) => `
 <svg
    width="260"
    height="110"
@@ -821,7 +821,7 @@ export const planetaryGearFixedCarrierSVG = `
          id="text7"><tspan
            x="40.675941"
            y="14.870775"
-           id="tspan8">сателлит</tspan></text>
+           id="tspan8">${t('ugo_text_planet_gear')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9"
@@ -844,7 +844,7 @@ export const planetaryGearFixedCarrierSVG = `
            id="text7-8"><tspan
              x="40.675941"
              y="14.870775"
-             id="tspan8-8">солнечная шестерня</tspan></text>
+             id="tspan8-8">${t('ugo_text_sun_gear')}</tspan></text>
         <path
            style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
            id="path9-2"
@@ -868,7 +868,7 @@ export const planetaryGearFixedCarrierSVG = `
            id="text7-8-2"><tspan
              x="40.675941"
              y="14.870775"
-             id="tspan8-8-4">коронная шестерня</tspan></text>
+             id="tspan8-8-4">${t('ugo_text_ring_gear')}</tspan></text>
         <path
            style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
            id="path9-2-5"
@@ -880,7 +880,7 @@ export const planetaryGearFixedCarrierSVG = `
 
 `;
 
-export const planetaryGearFixedRingSVG = `
+export const planetaryGearFixedRingSVG = (t: (key: string) => string) => `
 <svg
    width="260"
    height="110"
@@ -1020,7 +1020,7 @@ export const planetaryGearFixedRingSVG = `
          id="text7"><tspan
            x="40.675941"
            y="14.870775"
-           id="tspan8">сателлит</tspan></text>
+           id="tspan8">${t('ugo_text_planet_gear')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9"
@@ -1043,7 +1043,7 @@ export const planetaryGearFixedRingSVG = `
            id="text7-8"><tspan
              x="40.675941"
              y="14.870775"
-             id="tspan8-8">солнечная шестерня</tspan></text>
+             id="tspan8-8">${t('ugo_text_sun_gear')}</tspan></text>
         <path
            style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
            id="path9-2"
@@ -1067,7 +1067,7 @@ export const planetaryGearFixedRingSVG = `
            id="text7-8-2"><tspan
              x="40.675941"
              y="14.870775"
-             id="tspan8-8-4">коронная шестерня</tspan></text>
+             id="tspan8-8-4">${t('ugo_text_ring_gear')}</tspan></text>
         <path
            style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
            id="path9-2-5"
@@ -1078,7 +1078,7 @@ export const planetaryGearFixedRingSVG = `
 </svg>
 `;
 
-export const planetaryGearFixedSunSVG = `
+export const planetaryGearFixedSunSVG = (t: (key: string) => string) => `
 <svg
    width="260"
    height="110"
@@ -1225,7 +1225,7 @@ export const planetaryGearFixedSunSVG = `
          id="text7"><tspan
            x="40.675941"
            y="14.870775"
-           id="tspan8">сателлит</tspan></text>
+           id="tspan8">${t('ugo_text_planet_gear')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9"
@@ -1248,7 +1248,7 @@ export const planetaryGearFixedSunSVG = `
            id="text7-8"><tspan
              x="40.675941"
              y="14.870775"
-             id="tspan8-8">солнечная шестерня</tspan></text>
+             id="tspan8-8">${t('ugo_text_sun_gear')}</tspan></text>
         <path
            style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
            id="path9-2"
@@ -1272,7 +1272,7 @@ export const planetaryGearFixedSunSVG = `
            id="text7-8-2"><tspan
              x="40.675941"
              y="14.870775"
-             id="tspan8-8-4">коронная шестерня</tspan></text>
+             id="tspan8-8-4">${t('ugo_text_ring_gear')}</tspan></text>
         <path
            style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
            id="path9-2-5"
@@ -1295,7 +1295,7 @@ export const shaftDashedSVG = `
 </svg>
 `;
 
-export const toothedBeltDriveSVG = `
+export const toothedBeltDriveSVG = (t: (key: string) => string) => `
 <svg
    width="280"
    height="110"
@@ -1404,7 +1404,7 @@ export const toothedBeltDriveSVG = `
        id="text7"><tspan
          x="40.675941"
          y="14.870775"
-         id="tspan8">ведущий шкив, d1</tspan></text>
+         id="tspan8">${t('ugo_text_driving_pulley_d1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -1425,7 +1425,7 @@ export const toothedBeltDriveSVG = `
        id="text7-4"><tspan
          x="55.086422"
          y="19.237587"
-         id="tspan8-2">ремень</tspan></text>
+         id="tspan8-2">${t('ugo_text_belt')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.0016;stroke-dasharray:none;stroke-opacity:1"
        id="path9-3"
@@ -1449,7 +1449,7 @@ export const toothedBeltDriveSVG = `
          id="text7-8"><tspan
            x="41.905449"
            y="25.526512"
-           id="tspan8-8">ведомый шкив, d1</tspan></text>
+           id="tspan8-8">${t('ugo_text_driven_pulley_d2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -1472,7 +1472,7 @@ export const toothedBeltDriveSVG = `
        transform="scale(-1,1)"><tspan
          x="-145.73178"
          y="15.280611"
-         id="tspan8-4">входной вал</tspan></text>
+         id="tspan8-4">${t('ugo_text_input_shaft')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9-5"
@@ -1496,7 +1496,7 @@ export const toothedBeltDriveSVG = `
          transform="scale(-1,1)"><tspan
            x="-144.98796"
            y="15.690448"
-           id="tspan8-8-1">выходной вал</tspan></text>
+           id="tspan8-8-1">${t('ugo_text_output_shaft')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2-5"
@@ -1506,7 +1506,7 @@ export const toothedBeltDriveSVG = `
 </svg>
 `;
 
-export const wormDriveBottomSVG = `
+export const wormDriveBottomSVG = (t: (key: string) => string) => `
 <svg
    width="260"
    height="110"
@@ -1630,7 +1630,7 @@ export const wormDriveBottomSVG = `
        id="text7"><tspan
          x="40.675941"
          y="14.870775"
-         id="tspan8">червяк, z1</tspan></text>
+         id="tspan8">${t('ugo_text_worm_z1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -1654,7 +1654,7 @@ export const wormDriveBottomSVG = `
          id="text7-8"><tspan
            x="40.387608"
            y="24.962519"
-           id="tspan8-8">червячное колесо, z1</tspan></text>
+           id="tspan8-8">${t('ugo_text_worm_wheel_z2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"
@@ -1664,7 +1664,7 @@ export const wormDriveBottomSVG = `
 </svg>
 `;
 
-export const wormDriveTopSVG = `
+export const wormDriveTopSVG = (t: (key: string) => string) => `
 <svg
    width="260"
    height="110"
@@ -1708,7 +1708,7 @@ export const wormDriveTopSVG = `
        id="text7"><tspan
          x="40.675941"
          y="14.870775"
-         id="tspan8">червяк, z1</tspan></text>
+         id="tspan8">${t('ugo_text_worm_z1')}</tspan></text>
     <path
        style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
        id="path9"
@@ -1732,7 +1732,7 @@ export const wormDriveTopSVG = `
          id="text7-8"><tspan
            x="40.387608"
            y="24.962519"
-           id="tspan8-8">червячное колесо, z1</tspan></text>
+           id="tspan8-8">${t('ugo_text_worm_wheel_z2')}</tspan></text>
       <path
          style="fill:#404040;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"
          id="path9-2"

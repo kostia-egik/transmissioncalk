@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 // import { Analytics } from '@vercel/analytics/react';
 import { AppStep, EngineParams, StageCalculationData, FinalCalculationResults, SchemeElement, GearType, ParallelLayoutType, ModuleCalculationData, PlanetaryConfig, PLANETARY_CONFIG_MAP, PlanetaryShaftType, Project } from '../types';
 import { DEFAULT_ENGINE_PARAMS } from '../constants';
@@ -14,7 +14,12 @@ import { InfoIcon } from '../assets/icons/InfoIcon';
 import { getGearCategory } from '../utils/gear';
 import OnboardingManager from '../components/OnboardingManager';
 import { HomeIcon } from '../assets/icons/HomeIcon';
-import { getAllProjects, getProject, saveProject, deleteProject } from '../services/db';
+import { getProject, saveProject, deleteProject } from '../services/db';
+import { AuthWidget } from '../components/AuthWidget';
+// FIX: Import getSharedProject to handle loading shared project links.
+import { getSharedProject } from '../services/firestoreService';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 
 
 // --- Confirmation Modal Component ---
@@ -35,11 +40,18 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   message,
   onConfirm,
   onCancel,
-  confirmText = 'Да',
-  cancelText = 'Нет',
+  confirmText,
+  cancelText,
   showDontShowAgain = true,
 }) => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const { t } = useLanguage();
+
+  useEffect(() => {
+    if (isOpen) {
+      setDontShowAgain(false); // Сбрасываем состояние при открытии
+    }
+  }, [isOpen]);
 
   if (!isOpen) {
     return null;
@@ -80,17 +92,17 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
               />
               <label htmlFor="dont-show-again" className="ml-2 block text-sm text-gray-700 cursor-pointer">
-                Больше не показывать это сообщение
+                {t('dialog_dont_show_again')}
               </label>
             </div>
           )}
         </div>
         <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3">
           <Button onClick={handleCancel} variant="secondary">
-            {cancelText}
+            {cancelText || t('common_no')}
           </Button>
           <Button onClick={handleConfirm} variant="primary">
-            {confirmText}
+            {confirmText || t('common_yes')}
           </Button>
         </div>
       </div>
@@ -339,12 +351,15 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
   const [schemeTourTrigger, setSchemeTourTrigger] = useState(0);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const { t } = useLanguage();
 
   // --- Local Project State ---
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [localProjects, setLocalProjects] = useState<Project[]>([]);
   const [isDirty, setIsDirty] = useState(false);
   const [lastSavedState, setLastSavedState] = useState<string>(getDefaultStateAsString());
+  // FIX: Add state for shared project view mode.
+  const [isViewingShared, setIsViewingShared] = useState(false);
+  const [loadedSharedId, setLoadedSharedId] = useState<string | null>(null);
 
   const confirmAction = useCallback((
     title: string,
@@ -367,19 +382,37 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
 
   const handleConfirmationConfirm = (dontShowAgain: boolean) => {
     if (confirmationState) {
-        if (confirmationState.storageKey && dontShowAgain) {
-            localStorage.setItem(confirmationState.storageKey, 'true');
+        const { onConfirm, storageKey } = confirmationState;
+
+        if (storageKey && dontShowAgain) {
+            localStorage.setItem(storageKey, 'true');
         }
-        confirmationState.onConfirm();
+        // Сначала закрываем модальное окно
         setConfirmationState(null);
+
+        // Затем, с небольшой задержкой, выполняем действие.
+        // Это позволяет React обработать обновление состояния и убрать модальное окно
+        // до того, как будет инициировано потенциально "тяжелое" действие, такое как навигация.
+        setTimeout(() => {
+            onConfirm();
+        }, 50);
     }
   };
 
   const handleConfirmationCancel = () => {
-    if (confirmationState?.onCancel) {
-        confirmationState.onCancel();
+    if (confirmationState) {
+        const { onCancel } = confirmationState;
+        
+        // Сначала закрываем модальное окно
+        setConfirmationState(null);
+
+        // Затем, с задержкой, вызываем onCancel, если он есть
+        if (onCancel) {
+            setTimeout(() => {
+                onCancel();
+            }, 50);
+        }
     }
-    setConfirmationState(null);
   };
 
   const showNotification = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
@@ -395,10 +428,11 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
 
   const AUTOSAVE_KEY = 'autosave-transmission-project';
 
-  // FIX: Moved `handleCalculationDataChange` before the functions that use it (`handleLoadProjectLocal`, `handleNewProject`) to fix "used before its declaration" errors.
+  // --- Local Project Handlers ---
+  
   const handleCalculationDataChange = useCallback((newData: StageCalculationData[]) => {
     setCalculationData(newData);
-    const { results, updatedCalculationData, error } = calculateCascade(engineParams, newData);
+    const { results, updatedCalculationData, error } = calculateCascade(engineParams, newData, t);
     // Обновляем данные с результатами расчетов, но не изменяем пользовательский ввод
     setCalculationData(prevData => {
         // Ensure prevData has the same structure as updatedCalculationData
@@ -422,7 +456,7 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
         setFinalResults(null);
     } else {
         if (results) {
-            showNotification('Итоговые параметры обновлены!', 'success');
+            showNotification(t('notification_params_updated'), 'success');
         }
         setFinalResults(results);
     }
@@ -430,17 +464,10 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
     if (newData.some(stage => stage.modules.some(m => m.isSelected))) {
         setShowFinalResults(true);
     }
-  }, [engineParams, showNotification]);
+  }, [engineParams, showNotification, t]);
 
-  // --- Local Project Handlers ---
-  const refreshLocalProjects = useCallback(async () => {
-    const projects = await getAllProjects();
-    setLocalProjects(projects);
-  }, []);
-
-  const handleLoadProjectLocal = useCallback(async (id: string) => {
+  const handleLoadProjectLocal = useCallback(async (project: Project) => {
     const loadFn = async () => {
-      const project = await getProject(id);
       if (project) {
         const { engineParams: ep, calculationData: cd, schemeElements: se } = project.data;
         setEngineParams(ep);
@@ -470,53 +497,30 @@ const Workbench: React.FC<WorkbenchProps> = ({ onNavigateToHome, navigate, curre
     }
   }, [isDirty, showNotification, handleCalculationDataChange, confirmAction]);
 
-  const handleSaveProjectLocal = useCallback(async (idToUpdate?: string, newName?: string) => {
-    const dataToSave = { engineParams, calculationData, schemeElements };
-    let projectToSave: Project;
+  const handleSaveProjectLocal = useCallback(async (project: Project): Promise<string | undefined> => {
+    // Caller is now responsible for lastModified. We just save the object.
+    await saveProject(project);
 
-    if (idToUpdate) { // Update existing project
-        const projectToUpdate = currentProject?.id === idToUpdate ? currentProject : await getProject(idToUpdate);
-        if (!projectToUpdate) {
-            showNotification('Ошибка: проект для обновления не найден.', 'error');
-            return;
-        }
-        projectToSave = {
-            ...projectToUpdate,
-            name: newName || projectToUpdate.name, // Allow renaming on update
-            lastModified: Date.now(),
-            data: dataToSave
-        };
-    } else { // Save as new project
-        if (!newName || newName.trim() === '') {
-            showNotification('Необходимо указать имя проекта.', 'warning');
-            return;
-        }
-        projectToSave = {
-            id: String(Date.now()),
-            name: newName.trim(),
-            lastModified: Date.now(),
-            meta: { appName: 'transmission-calculator', appVersion: '1.2.0' },
-            data: dataToSave
-        };
+    // This is the fix: only update workbench's "current project" if the saved project
+    // is the one being worked on, or if there is no current project yet.
+    if ((currentProject && currentProject.id === project.id) || !currentProject) {
+        setCurrentProject(project);
+        setLastSavedState(JSON.stringify(project.data));
     }
 
-    await saveProject(projectToSave);
-    setCurrentProject(projectToSave);
-    setLastSavedState(JSON.stringify(dataToSave));
-    await refreshLocalProjects();
-    showNotification(`Проект "${projectToSave.name}" сохранен.`, 'success');
-}, [engineParams, calculationData, schemeElements, currentProject, refreshLocalProjects, showNotification]);
+    showNotification(`Проект "${project.name}" сохранен.`, 'success');
+    return project.id;
+  }, [currentProject, showNotification]);
 
 const handleDeleteProjectLocal = useCallback(async (id: string) => {
     await deleteProject(id);
-    await refreshLocalProjects();
     if (currentProject?.id === id) {
         setCurrentProject(null);
         // After deleting the current project, the state is now like a new, unsaved project
         setLastSavedState(getDefaultStateAsString());
     }
     showNotification('Проект удален.', 'success');
-}, [currentProject, refreshLocalProjects, showNotification]);
+}, [currentProject, showNotification]);
 
 const handleNewProject = useCallback(() => {
     const createNew = () => {
@@ -542,11 +546,6 @@ const handleNewProject = useCallback(() => {
     }
 }, [isDirty, showNotification, handleCalculationDataChange, confirmAction]);
 
-// Fetch projects on initial mount
-useEffect(() => {
-    refreshLocalProjects();
-}, [refreshLocalProjects]);
-
 // Track dirty state
 useEffect(() => {
     const currentState = JSON.stringify({ engineParams, calculationData, schemeElements });
@@ -562,7 +561,7 @@ useEffect(() => {
             const { engineParams: loadedParams, calculationData: loadedData, schemeElements: loadedScheme } = savedState.data;
             const loadedProjectId = savedState.currentProjectId;
 
-            const { results, updatedCalculationData, error } = calculateCascade(loadedParams, loadedData);
+            const { results, updatedCalculationData } = calculateCascade(loadedParams, loadedData, t);
             
             setEngineParams(loadedParams);
             setCalculationData(updatedCalculationData);
@@ -582,24 +581,20 @@ useEffect(() => {
                 setLastSavedState(getDefaultStateAsString());
             }
 
-            if (error) {
-                showNotification(error, 'error');
-                setFinalResults(null);
-            } else {
-                setFinalResults(results);
-            }
+            setFinalResults(results);
+
             if (updatedCalculationData.some(stage => stage.modules.some(m => m.isSelected))) {
                 setShowFinalResults(true);
             }
             
-            showNotification('Сессия восстановлена.', 'success');
+            showNotification(t('notification_session_restored'), 'success');
         } catch (e) {
-            showNotification('Ошибка при восстановлении сессии.', 'error');
+            showNotification(t('notification_session_restore_error'), 'error');
             localStorage.removeItem(AUTOSAVE_KEY);
         }
     }
     setShowRestoreDialog(false);
-  }, [showNotification]);
+  }, [showNotification, t]);
 
   const handleDismissRestore = useCallback(() => {
       localStorage.removeItem(AUTOSAVE_KEY);
@@ -608,6 +603,15 @@ useEffect(() => {
 
   // Эффект для восстановления сессии при первой загрузке
   useEffect(() => {
+      // FIX: Если мы заходим по прямой ссылке на общий проект, не нужно предлагать восстановить сессию.
+      // Вместо этого, мы очищаем старое автосохранение, чтобы оно не мешало.
+      const isSharedPath = currentPath.startsWith('/scheme/');
+      if (isSharedPath) {
+          localStorage.removeItem(AUTOSAVE_KEY);
+          setShowRestoreDialog(false);
+          return;
+      }
+      
       const savedStateJSON = localStorage.getItem(AUTOSAVE_KEY);
 
       if (savedStateJSON) {
@@ -687,6 +691,59 @@ useEffect(() => {
     }
   }, [currentStep]);
 
+  // FIX: Implement logic to handle shared project URLs.
+  useEffect(() => {
+    const pathSegments = currentPath.split('/').filter(Boolean);
+    if (pathSegments[0] === 'scheme' && pathSegments.length > 1) {
+        const sharedId = pathSegments[1];
+        if (sharedId === loadedSharedId) {
+            return; // Already loaded this shared project
+        }
+
+        const loadSharedProject = async (id: string) => {
+            try {
+                const projectData = await getSharedProject(id);
+                if (projectData) {
+                    const { engineParams: ep, calculationData: cd, schemeElements: se } = projectData;
+                    
+                    const { results, updatedCalculationData } = calculateCascade(ep, cd, t);
+                    
+                    setEngineParams(ep);
+                    setCalculationData(updatedCalculationData);
+                    setSchemeElements(se || []);
+                    setFinalResults(results);
+                    setShowFinalResults(!!results);
+                    
+                    setCurrentProject(null);
+                    setLastSavedState(getDefaultStateAsString());
+                    setIsViewingShared(true);
+                    setLoadedSharedId(id);
+                    
+                    showNotification('Загружен общий проект. Сохраните его, чтобы внести изменения.', 'success');
+                    navigate('/scheme');
+                } else {
+                    showNotification('Общий проект не найден. Вы будете перенаправлены на главную страницу.', 'error');
+                    navigate('/');
+                }
+            } catch (error) {
+                console.error("Ошибка при загрузке общего проекта:", error);
+                showNotification('Ошибка при загрузке общего проекта.', 'error');
+                navigate('/');
+            }
+        };
+        loadSharedProject(sharedId);
+    } else {
+        // Reset state if we navigate away from a shared link
+        if (isViewingShared) {
+            setIsViewingShared(false);
+        }
+        if (loadedSharedId) {
+            setLoadedSharedId(null);
+        }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPath]); // Only run when path changes. Other functions should be stable.
+
   const openInfoModal = useCallback(() => {
     // Теперь вкладка по умолчанию зависит от текущей страницы
     setInfoModalDefaultTab(currentStep === AppStep.Workbench ? 'guide' : 'guide');
@@ -750,8 +807,7 @@ useEffect(() => {
   const handleBuildNewScheme = useCallback(() => {
     const isAnyModuleConfigured = calculationData.some(stage => stage.modules.some(m => m.isSelected && m.type));
     if (!isAnyModuleConfigured) {
-      const errorMsg = "Необходимо сконфигурировать хотя бы один модуль (выбрать тип передачи).";
-      showNotification(errorMsg, 'error');
+      showNotification(t('notification_at_least_one_module_configured'), 'error');
       setShowFinalResults(true);
       return;
     }
@@ -771,6 +827,10 @@ useEffect(() => {
       setCalculationDataForRevert(calculationData);
       setInitialSchemeElements(defaultScheme);
       setSchemeElements(defaultScheme);
+      
+      // Закрываем диалоговое окно перед навигацией
+      setShowChangesDialog(false);
+
       navigate('/scheme');
       setTimeout(() => {
           if (localStorage.getItem('onboardingComplete_introjs_scheme_v1') !== 'true') {
@@ -781,20 +841,20 @@ useEffect(() => {
 
     if (hasMissingParams) {
         confirmAction(
-            'Подтвердите действие',
-            'Внимание: Параметры передач не были полностью заполнены. Схема будет построена как кинематическая, без учета реальных габаритов и передаточных чисел. Соотношение размеров элементов будет условным. Продолжить?',
+            t('dialog_confirm_action_title'),
+            t('dialog_missing_params_warning_message'),
             proceed,
             'dontShowMissingParamsWarning'
         );
     } else {
         proceed();
     }
-  }, [calculationData, showNotification, navigate, confirmAction]);
+  }, [calculationData, showNotification, navigate, confirmAction, t]);
 
   const handleGoToSchemeView = useCallback((options?: { refresh?: boolean }) => {
     if (options?.refresh) {
       // Пересчитываем данные, чтобы получить самые свежие значения
-      const { updatedCalculationData } = calculateCascade(engineParams, calculationData);
+      const { updatedCalculationData } = calculateCascade(engineParams, calculationData, t);
       // Сливаем свежие данные в существующую схему
       const updatedScheme = mergeCalculationDataIntoScheme(schemeElements, updatedCalculationData);
       setSchemeElements(updatedScheme);
@@ -806,23 +866,18 @@ useEffect(() => {
       showNotification('Параметры на схеме обновлены!', 'success');
     }
     navigate('/scheme');
-  }, [engineParams, calculationData, schemeElements, showNotification, navigate]);
+  }, [engineParams, calculationData, t, schemeElements, showNotification, navigate]);
   
   const handleRevertAndGoToScheme = useCallback(() => {
     if (calculationDataForRevert) {
       // Re-run the calculation with the data to be restored.
-      const { results, updatedCalculationData, error } = calculateCascade(engineParams, calculationDataForRevert);
+      const { results, updatedCalculationData } = calculateCascade(engineParams, calculationDataForRevert, t);
 
       // Directly set the state to the restored and recalculated data.
       setCalculationData(updatedCalculationData);
 
       // Update final results.
-      if (error) {
-        showNotification(error, 'error');
-        setFinalResults(null);
-      } else {
-        setFinalResults(results);
-      }
+      setFinalResults(results);
       
       if (updatedCalculationData.some(stage => stage.modules.some(m => m.isSelected))) {
           setShowFinalResults(true);
@@ -833,7 +888,7 @@ useEffect(() => {
       setShowChangesDialog(false);
       showNotification('Изменения на рабочем столе отменены.', 'success');
     }
-  }, [calculationDataForRevert, engineParams, navigate, showNotification]);
+  }, [calculationDataForRevert, engineParams, navigate, showNotification, t]);
 
 
   const handleResetConfiguration = useCallback(() => {
@@ -984,17 +1039,20 @@ useEffect(() => {
             message={confirmationState.message}
             onConfirm={handleConfirmationConfirm}
             onCancel={handleConfirmationCancel}
+            showDontShowAgain={!!confirmationState.storageKey}
         />
       )}
       {!isSchemeDrawing && (
         <header className="w-full p-2 sm:p-4 bg-white/80 backdrop-blur-sm sm:sticky top-0 z-30 border-b border-slate-200 flex justify-between items-center shadow-md shadow-slate-900/40">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
-                Расчет многоступенчатых трансмиссий
+                {t('app_title')}
             </h1>
-            <div className="flex space-x-2 ml-4">
-                <Button onClick={onNavigateToHome} variant="secondary" title="На главную" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><HomeIcon /></Button>
-                <Button onClick={() => openInfoModal()} variant="secondary" title="Справка" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><InfoIcon /></Button>
-                <Button onClick={() => setIsProjectActionsModalOpen(true)} variant="secondary" title="Проект и Экспорт" className="!px-3 !py-2 shadow-md shadow-slate-900/40"><FolderIcon /></Button>
+            <div className="flex items-center space-x-2 ml-4">
+                <LanguageSwitcher />
+                <Button onClick={onNavigateToHome} variant="secondary" title={t('header_home_tooltip')} className="!px-3 !py-2 shadow-md shadow-slate-900/40 h-10"><HomeIcon /></Button>
+                <Button onClick={() => openInfoModal()} variant="secondary" title={t('header_info_tooltip')} className="!px-3 !py-2 shadow-md shadow-slate-900/40 h-10"><InfoIcon /></Button>
+                <Button onClick={() => setIsProjectActionsModalOpen(true)} variant="secondary" title={t('header_project_export_tooltip')} className="!px-3 !py-2 shadow-md shadow-slate-900/40 h-10"><FolderIcon /></Button>
+                <AuthWidget />
             </div>
         </header>
       )}
@@ -1003,16 +1061,16 @@ useEffect(() => {
         {showRestoreDialog && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm" onClick={handleDismissRestore}>
                 <div className="bg-white rounded-lg shadow-xl p-6 m-4 max-w-md w-full animate-fade-in" onClick={e => e.stopPropagation()}>
-                    <h3 className="text-lg font-bold text-gray-800">Обнаружена незаконченная сессия</h3>
+                    <h3 className="text-lg font-bold text-gray-800">{t('dialog_session_restore_title')}</h3>
                     <p className="mt-2 text-sm text-gray-600">
-                        Хотите восстановить предыдущий прогресс? Если вы откажетесь, несохраненные данные будут удалены.
+                        {t('dialog_session_restore_message')}
                     </p>
                     <div className="mt-6 flex justify-end space-x-3">
                         <Button variant="secondary" onClick={handleDismissRestore}>
-                            Нет, начать заново
+                            {t('dialog_session_restore_cancel')}
                         </Button>
                         <Button variant="primary" onClick={handleRestoreSession}>
-                            Да, восстановить
+                            {t('dialog_session_restore_confirm')}
                         </Button>
                     </div>
                 </div>
@@ -1028,7 +1086,6 @@ useEffect(() => {
             onDeleteLocal={handleDeleteProjectLocal}
             onNewProject={handleNewProject}
             currentProject={currentProject}
-            localProjects={localProjects}
             isDirty={isDirty}
             context={currentStep === AppStep.Workbench ? 'workbench' : 'scheme'}
             svgContainerRef={svgContainerRef}
@@ -1036,6 +1093,9 @@ useEffect(() => {
             calculationData={calculationData}
             engineParams={engineParams}
             confirmAction={confirmAction}
+            // FIX: Pass missing props to ProjectActionsModal.
+            isViewingShared={isViewingShared}
+            showNotification={showNotification}
         />
         <InfoModal 
             isOpen={isInfoModalOpen} 
@@ -1047,36 +1107,33 @@ useEffect(() => {
          {showChangesDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm" onClick={() => setShowChangesDialog(false)}>
                     <div className="bg-white rounded-lg shadow-xl p-6 m-4 max-w-md w-full animate-fade-in" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold text-gray-800">Обнаружены структурные изменения!</h3>
+                        <h3 className="text-lg font-bold text-gray-800">{t('dialog_structural_changes_title')}</h3>
                         <p className="mt-2 text-sm text-gray-600">
-                           Вы изменили тип передачи (например, с параллельной на угловую), добавили или удалили ступень. Эти изменения конфликтуют с текущей компоновкой схемы. Пожалуйста, выберите действие:
+                           {t('dialog_structural_changes_message')}
                         </p>
                         <div className="mt-6 flex flex-col space-y-3">
                             <Button variant="primary" onClick={() => { 
                                 confirmAction(
-                                    'Перестроить схему?',
-                                    'Вы уверены, что хотите перестроить схему? Все ваши предыдущие изменения в компоновке будут потеряны.',
-                                    () => {
-                                        handleBuildNewScheme();
-                                        setShowChangesDialog(false);
-                                    },
+                                    t('dialog_rebuild_scheme_title'),
+                                    t('dialog_rebuild_scheme_message'),
+                                    handleBuildNewScheme,
                                     'dontShowRebuildSchemeWarning'
                                 );
                             }}>
-                                Применить и перестроить схему (сброс компоновки)
+                                {t('dialog_structural_changes_apply_button')}
                             </Button>
                             <Button variant="secondary" onClick={() => {
                                 confirmAction(
-                                    "Отменить изменения?",
-                                    "Вы уверены? Все несохраненные изменения на 'Рабочем столе' будут отменены.",
+                                    t('dialog_revert_changes_title'),
+                                    t('dialog_revert_changes_message'),
                                     handleRevertAndGoToScheme,
                                     'dontShowRevertChangesWarning'
                                 );
                              }}>
-                                Отменить изменения и вернуться к схеме
+                                {t('dialog_structural_changes_revert_button')}
                             </Button>
                             <Button variant="secondary" onClick={() => setShowChangesDialog(false)}>
-                                Отмена
+                                {t('dialog_structural_changes_cancel_button')}
                             </Button>
                         </div>
                     </div>
@@ -1120,6 +1177,9 @@ useEffect(() => {
               onScrollComplete={handleScrollComplete}
               setShowChangesDialog={setShowChangesDialog}
               confirmAction={confirmAction}
+              // FIX: Pass missing props to WorkbenchPage.
+              isViewingShared={isViewingShared}
+              onOpenProjectModal={() => setIsProjectActionsModalOpen(true)}
             />
             <OnboardingManager tourKey="workbench" startTourTrigger={tourTrigger} />
           </>
@@ -1142,13 +1202,14 @@ useEffect(() => {
               onOpenInfoModal={handleOpenSchemeInfoModal}
               onSaveProjectLocal={handleSaveProjectLocal}
               onLoadProjectLocal={handleLoadProjectLocal}
-              // FIX: Corrected prop name from `onDeleteLocal` to `onDeleteProjectLocal` to match the `SchemeBuilderPageProps` interface.
               onDeleteProjectLocal={handleDeleteProjectLocal}
               onNewProject={handleNewProject}
               currentProject={currentProject}
-              localProjects={localProjects}
               isDirty={isDirty}
               confirmAction={confirmAction}
+              // FIX: Pass missing props to SchemeBuilderPage.
+              isViewingShared={isViewingShared}
+              showNotification={showNotification}
             />
             <OnboardingManager tourKey="scheme" startTourTrigger={schemeTourTrigger} />
           </>
@@ -1156,7 +1217,7 @@ useEffect(() => {
       </main>
       {!isSchemeDrawing && (
         <footer className="w-full px-4 sm:px-6 lg:px-8 mt-8 py-6 text-center text-gray-500 text-sm border-t border-slate-200">
-          <p>&copy; {new Date().getFullYear()} Мастер Трансмиссий. Все права защищены.</p>
+          <p>&copy; {new Date().getFullYear()} {t('footer_copyright')}</p>
           </footer>
       )}
     </div>

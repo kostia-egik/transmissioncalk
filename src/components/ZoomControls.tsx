@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ZoomInIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -25,16 +26,17 @@ interface ZoomControlsProps {
 }
 
 const ZoomControls: React.FC<ZoomControlsProps> = ({ onZoomIn, onZoomOut, onFitScreen }) => {
+  const { t } = useLanguage();
   const buttonClass = "p-2 bg-white/80 backdrop-blur-sm text-gray-700 border border-gray-300 rounded-full shadow-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500";
   return (
     <div id="zoom-controls" className="absolute bottom-4 right-4 z-20 flex flex-col space-y-2">
-      <button onClick={onZoomIn} className={buttonClass} title="Увеличить" aria-label="Увеличить масштаб">
+      <button onClick={onZoomIn} className={buttonClass} title={t('zoom_controls_zoom_in_tooltip')} aria-label={t('zoom_controls_zoom_in_aria_label')}>
         <ZoomInIcon />
       </button>
-      <button onClick={onZoomOut} className={buttonClass} title="Уменьшить" aria-label="Уменьшить масштаб">
+      <button onClick={onZoomOut} className={buttonClass} title={t('zoom_controls_zoom_out_tooltip')} aria-label={t('zoom_controls_zoom_out_aria_label')}>
         <ZoomOutIcon />
       </button>
-      <button onClick={onFitScreen} className={buttonClass} title="Показать всю схему" aria-label="Показать всю схему">
+      <button onClick={onFitScreen} className={buttonClass} title={t('zoom_controls_fit_screen_tooltip')} aria-label={t('zoom_controls_fit_screen_aria_label')}>
         <FitScreenIcon />
       </button>
     </div>
