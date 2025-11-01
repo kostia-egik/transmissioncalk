@@ -5,12 +5,15 @@ import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { NetworkProvider } from './contexts/NetworkContext';
 import { LanguageProvider } from './contexts/LanguageContext';
-// @ts-ignore
-import serviceWorkerUrl from '/service-worker.js?url';
 
 
 // --- Регистрация Service Worker ---
 if ('serviceWorker' in navigator) {
+  // Используем `new URL` чтобы получить правильный URL к файлу service-worker.
+  // Этот современный подход позволяет избежать встраивания Vite через `?url`, 
+  // что не поддерживается браузерами для service workers из-за политики безопасности.
+  const serviceWorkerUrl = new URL('../service-worker.js', import.meta.url).href;
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(serviceWorkerUrl, { type: 'module' })
       .then(registration => {
