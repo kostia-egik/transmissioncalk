@@ -1,15 +1,5 @@
 {
-  "headers": [
-    {
-      "source": "/assets/service-worker-*.js",
-      "headers": [
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        }
-      ]
-    }
-  ],
+  "headers": [],
   "rewrites": [
     {
       "source": "/(.*)",
