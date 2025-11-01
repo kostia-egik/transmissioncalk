@@ -13,8 +13,8 @@ import serviceWorkerUrl from '../service-worker.js?url';
 // --- Регистрация Service Worker ---
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Используем импортированный URL для регистрации.
-    navigator.serviceWorker.register(serviceWorkerUrl, { type: 'module' })
+    // Используем импортированный URL для регистрации и явно указываем scope.
+    navigator.serviceWorker.register(serviceWorkerUrl, { scope: '/', type: 'module' })
       .then(registration => {
         console.log('Service Worker зарегистрирован успешно, scope:', registration.scope);
       })
