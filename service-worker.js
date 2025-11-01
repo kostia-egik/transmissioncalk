@@ -2,17 +2,19 @@
 const CACHE_NAME = 'transmission-cache-v1';
 
 // Список основных файлов, необходимых для запуска приложения.
+// Удалены ./favicon.png и ./index.html для повышения надежности установки.
 // Остальные ресурсы (например, скрипты с CDN) будут кэшироваться динамически при первом доступе.
 const urlsToCache = [
   '/',
-  './index.html', // Явно указываем для надежности
-  './favicon.png',
   'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/intro.js',
   'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css',
 ];
 
 // Этап установки: открываем кэш и добавляем в него основные файлы.
 self.addEventListener('install', (event) => {
+  // Пропускаем ожидание, чтобы новый Service Worker активировался сразу после установки.
+  self.skipWaiting();
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -22,7 +24,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Этап активации: удаляем старые версии кэша, чтобы приложение обновлялось.
+// Этап активации: удаляем старые версии кэша и берем управление на себя.
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -35,7 +37,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Захватываем контроль над открытыми страницами
   );
 });
 

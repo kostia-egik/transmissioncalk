@@ -1,20 +1,22 @@
 // This file contains type definitions for assets that TypeScript doesn't know about by default.
 
+// FIX: Renaming the exported variable from `value` to `content` in the asset module declarations below
+// to resolve a potential, cryptic naming collision that may be causing the "Duplicate identifier 'src'" error.
 declare module '*.webp' {
-  const value: string;
-  export default value;
+  const content: string;
+  export default content;
 }
 
 declare module '*.mp4' {
-  const value: string;
-  export default value;
+  const content: string;
+  export default content;
 }
 
 // Объявляем TypeScript, что импорт с суффиксом `?url` является модулем,
 // который экспортирует строку (URL). Это исправляет ошибку TS2307.
 declare module '*?url' {
-    const value: string;
-    export default value;
+    const content: string;
+    export default content;
 }
 
 // FIX: Moved Vite environment variable types here from firebase.ts to properly augment the global scope.
