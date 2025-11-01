@@ -2,10 +2,10 @@
 const CACHE_NAME = 'transmission-cache-v1';
 
 // Список основных файлов, необходимых для запуска приложения.
-// Удалены ./favicon.png и ./index.html для повышения надежности установки.
-// Остальные ресурсы (например, скрипты с CDN) будут кэшироваться динамически при первом доступе.
+// Явно добавляем /index.html для надежности кэширования в SPA.
 const urlsToCache = [
   '/',
+  '/index.html',
   'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/intro.js',
   'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css',
 ];
