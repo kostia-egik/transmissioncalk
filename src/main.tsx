@@ -9,13 +9,10 @@ import { LanguageProvider } from './contexts/LanguageContext';
 
 // --- Регистрация Service Worker ---
 if ('serviceWorker' in navigator) {
-  // Используем `new URL` чтобы получить правильный URL к файлу service-worker.
-  // Этот современный подход позволяет избежать встраивания Vite через `?url`, 
-  // что не поддерживается браузерами для service workers из-за политики безопасности.
-  const serviceWorkerUrl = new URL('../service-worker.js', import.meta.url).href;
-
+  // Регистрируем Service Worker по его прямому пути.
+  // Это самый надежный способ, который работает во всех средах, включая Vercel.
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(serviceWorkerUrl, { type: 'module' })
+    navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
       .then(registration => {
         console.log('Service Worker зарегистрирован успешно, scope:', registration.scope);
       })
