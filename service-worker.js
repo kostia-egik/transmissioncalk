@@ -6,7 +6,7 @@ const CACHE_NAME = 'transmission-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/intro.js',
+  'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/intro.min.js',
   'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css',
 ];
 
