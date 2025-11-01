@@ -34,14 +34,15 @@ export interface StageSetup {
 }
 
 export enum GearType {
-  Gear = "Шестерня",
-  Chain = "Цепь",
-  Planetary = "Планетарная передача",
-  ToothedBelt = "Зубчато-ременная передача",
-  Belt = "Ременная передача",
-  Bevel = "Коническая передача",
-  Worm = "Червячная передача",
+  Gear = "Gear",
+  Chain = "Chain",
+  Planetary = "Planetary",
+  ToothedBelt = "ToothedBelt",
+  Belt = "Belt",
+  Bevel = "Bevel",
+  Worm = "Worm",
 }
+
 
 export const AVAILABLE_GEAR_TYPES: GearType[] = [
   GearType.Gear,
@@ -61,12 +62,12 @@ export enum PlanetaryShaftType {
 export const PLANETARY_SHAFT_OPTIONS = [PlanetaryShaftType.Sun, PlanetaryShaftType.Carrier, PlanetaryShaftType.Ring];
 
 export enum PlanetaryConfig {
-  SunToRing = "Солнце → Корона",
-  RingToSun = "Корона → Солнце",
-  SunToCarrier = "Солнце → Водило",
-  CarrierToSun = "Водило → Солнце",
-  CarrierToRing = "Водило → Корона",
-  RingToCarrier = "Корона → Водило",
+  SunToRing = "sun_to_ring",
+  RingToSun = "ring_to_sun",
+  SunToCarrier = "sun_to_carrier",
+  CarrierToSun = "carrier_to_sun",
+  CarrierToRing = "carrier_to_ring",
+  RingToCarrier = "ring_to_carrier",
 }
 
 export const PLANETARY_CONFIG_MAP: Record<PlanetaryConfig, { in: PlanetaryShaftType; out: PlanetaryShaftType }> = {
@@ -89,10 +90,12 @@ export enum PlanetaryGearConfigType {
 
 // Обновленные типы для конических передач
 export enum BevelGearConfigType {
-  Config1 = "Инверсия (Схема 1)", 
-  Config2 = "Сохранение (Схема 2)", 
-  Config3 = "Сохранение (Схема 3)", 
+  Config1 = "config1", 
+  Config2 = "config2", 
+  Config3 = "config3", 
 }
+
+export const BEVEL_GEAR_CONFIG_OPTIONS = Object.values(BevelGearConfigType);
 
 // Новый enum для пространственного расположения УГО конической передачи
 export enum BevelGearPlacement {
@@ -110,31 +113,13 @@ export enum PowerSourceDirection {
   Down = 'down',
 }
 
-export interface BevelGearConfigOption {
-  value: BevelGearConfigType;
-  label: string;
-}
-
-export const BEVEL_GEAR_CONFIG_OPTIONS: BevelGearConfigOption[] = [
-    { value: BevelGearConfigType.Config1, label: BevelGearConfigType.Config1 },
-    { value: BevelGearConfigType.Config2, label: BevelGearConfigType.Config2 },
-    { value: BevelGearConfigType.Config3, label: BevelGearConfigType.Config3 },
-];
-
 export enum WormGearConfigType {
     TopApproach = 'worm-top',
     BottomApproach = 'worm-bottom',
 }
 
-export interface WormGearConfigOption {
-    value: WormGearConfigType;
-    label: string;
-}
+export const WORM_GEAR_CONFIG_OPTIONS = Object.values(WormGearConfigType);
 
-export const WORM_GEAR_CONFIG_OPTIONS: WormGearConfigOption[] = [
-    { value: WormGearConfigType.TopApproach, label: 'Червяк сверху' },
-    { value: WormGearConfigType.BottomApproach, label: 'Червяк снизу' },
-];
 
 export interface StageGearConfiguration {
     stageName: string;
@@ -208,6 +193,14 @@ export interface CascadeValues {
     orientation: ShaftOrientation;
 }
 
+export type ValidationMessage = string | { key: string; replacements?: Record<string, string | number> };
+
+export interface ValidationState {
+  errors?: Record<string, ValidationMessage>;
+  warnings?: Record<string, ValidationMessage>;
+}
+
+
 export interface ModuleCalculationData {
     id: string;
     type: GearType;
@@ -275,17 +268,14 @@ export interface ModuleCalculationData {
     moduleOutOrientation?: ShaftOrientation;
     error?: string;
     assemblyError?: string;
-    validationState?: {
-        errors?: Record<string, string>;
-        warnings?: Record<string, string>;
-    };
+    validationState?: ValidationState;
 }
 
 export interface StageCalculationData {
     id: string;
     stageName: string;
     modules: ModuleCalculationData[];
-    stageError?: string;
+    stageError?: ValidationMessage;
 }
 
 export interface FinalCalculationResults {
@@ -300,10 +290,7 @@ export interface FinalCalculationResults {
 
 export interface CalculationOutput {
     u: number;
-    validationState?: {
-        errors?: Record<string, string>;
-        warnings?: Record<string, string>;
-    };
+    validationState?: ValidationState;
     // Cylindrical
     a?: number;
     d1?: number;
@@ -388,4 +375,7 @@ export interface Project {
     appVersion: string;
   };
   data: ProjectData;
+  // Флаги для UI, не сохраняются в БД
+  isLocal?: boolean;
+  isCloud?: boolean;
 }

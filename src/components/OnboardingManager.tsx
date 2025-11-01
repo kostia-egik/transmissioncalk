@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 declare const introJs: any;
 
@@ -190,6 +191,7 @@ function forceDockTooltipOnMobile(tooltipEl: Element | null) {
 const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTourTrigger }) => {
   const tourInstanceRef = useRef<any>(null);
   const observerRef = useRef<MutationObserver | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (startTourTrigger === 0) {
@@ -227,97 +229,97 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
 
     const workbenchSteps = [
         {
-            title: 'Добро пожаловать!',
-            intro: 'Этот краткий тур познакомит вас с основными возможностями приложения для расчета трансмиссий. Давайте начнем!',
+            title: t('tour_welcome_title'),
+            intro: t('tour_workbench_intro'),
             hidePrev: true,
         },
         {
             element: '#engine-params-card',
-            title: '1. Настройте источник',
-            intro: 'Задайте параметры крутящего момента и диапазон оборотов для вашего двигателя или другого источника мощности.',
+            title: t('tour_workbench_step2_title'),
+            intro: t('tour_workbench_step2_intro'),
             position: 'bottom',
         },
         {
             element: '.add-stage-separator button',
-            title: '2. Добавьте ступень',
-            intro: 'Трансмиссия состоит из ступеней. Каждая ступень представляет собой пару валов. Используйте эту кнопку, чтобы добавить новую ступень между существующими.',
+            title: t('tour_workbench_step3_title'),
+            intro: t('tour_workbench_step3_intro'),
             position: 'bottom',
             highlightClass: 'highlight-circle'
         },
         {
             element: '#add-variant-btn-stage-0',
-            title: '3. Добавьте передачу',
-            intro: 'Добавьте вариант передачи на ступень. Вы можете добавить несколько параллельных передач (цилиндрические, цепные, ременные) для сравнения, но поворотные и планетарные могут быть только единственным вариантом.',
+            title: t('tour_workbench_step4_title'),
+            intro: t('tour_workbench_step4_intro'),
             position: isMobile ? 'bottom' : 'right',
         },
         {
             element: '#stage-0-module-0-default',
-            title: '4. Сконфигурируйте передачу',
-            intro: 'Выберите тип передачи и введите ее основные параметры. Для демонстрации, мы автоматически введем некоторые значения.',
+            title: t('tour_workbench_step5_title'),
+            intro: t('tour_workbench_step5_intro'),
             position: 'bottom',
         },
         {
             element: '#stage-0-module-0-default',
-            title: '5. Посмотрите детали',
-            intro: 'Здесь отображаются расчетные параметры модуля (межосевое расстояние, диаметры и т.д.), а также характеристики ступени на входе и выходе. Все данные обновляются в реальном времени.',
+            title: t('tour_workbench_step6_title'),
+            intro: t('tour_workbench_step6_intro'),
             position: 'right',
         },
         {
             element: '#final-results-card',
-            title: '6. Анализируйте результаты',
-            intro: 'После ввода данных в этом блоке появляются итоговые параметры всей трансмиссии. Следите за ними, чтобы оценить результат.',
+            title: t('tour_workbench_step7_title'),
+            intro: t('tour_workbench_step7_intro'),
             position: 'top',
         },
         {
             element: '#build-scheme-btn',
-            title: '7. Постройте схему',
-            intro: 'Когда конфигурация готова, нажмите кнопку "Построить схему", чтобы перейти в режим визуального редактора.',
+            title: t('tour_workbench_step8_title'),
+            intro: t('tour_workbench_step8_intro'),
             position: 'top',
         }
     ];
 
     const schemeSteps = [
         {
-            title: 'Добро пожаловать в Сборщик схем!',
-            intro: 'Здесь вы можете визуально компоновать вашу трансмиссию. Этот тур покажет, как это делать.',
+            title: t('tour_scheme_welcome_title'),
+            intro: t('tour_scheme_intro'),
             hidePrev: true,
         },
         {
             element: '#zoom-controls',
-            title: '1. Навигация по схеме',
-            intro: 'Перемещайте холст, зажав левую кнопку мыши, и масштабируйте колесом мыши. Эти кнопки также помогут вам управлять видом.',
+            title: t('tour_scheme_step2_title'),
+            intro: t('tour_scheme_step2_intro'),
             position: isMobile ? 'top' : 'left',
         },
         {
             element: '[data-ugo-id="power-source"]',
-            title: '2. Взаимодействие с элементами',
-            intro: 'Клик по любому элементу схемы, например, по этому источнику, открывает его контекстное меню.',
+            title: t('tour_scheme_step3_title'),
+            intro: t('tour_scheme_step3_intro'),
             position: isMobile ? 'top' : 'right',
         },
         {
             element: '#ugo-context-menu',
-            title: '3. Контекстное меню',
-            intro: 'В меню можно посмотреть информацию об элементе, добавить вал-проставку или быстро перейти к параметрам на "Рабочем столе".',
+            title: t('tour_scheme_step4_title'),
+            intro: t('tour_scheme_step4_intro'),
             position: 'left',
             tooltipClass: 'context-menu-tooltip',
             scrollToElement: false,
         },
         {
             element: '#scheme-header-controls',
-            title: '4. Управление и экспорт',
-            intro: 'Используйте эти кнопки, чтобы сбросить компоновку схемы к исходной или открыть меню проекта для сохранения и экспорта результатов.',
+            title: t('tour_scheme_step5_title'),
+            intro: t('tour_scheme_step5_intro'),
             position: isMobile ? 'bottom' : 'left',
         },
         {
             element: '#back-to-workbench-btn',
-            title: '5. Назад к расчетам',
-            intro: 'Эта кнопка вернет вас на "Рабочий стол" для редактирования расчетных параметров.',
+            title: t('tour_scheme_step6_title'),
+            intro: t('tour_scheme_step6_intro'),
             position: isMobile ? 'bottom' : 'right',
             highlightClass: 'highlight-circle'
         },
         {
-            title: 'Тур завершен!',
-            intro: 'Теперь вы готовы к работе. Экспериментируйте с компоновкой, чтобы достичь наилучшего результата!',
+            title: t('tour_scheme_final_title'),
+            intro: t('tour_scheme_final_intro'),
         }
     ];
 
@@ -327,13 +329,13 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
       showBullets: false,
       exitOnOverlayClick: false,
       exitOnEsc: true,
-      nextLabel: 'Далее',
-      prevLabel: 'Назад',
-      doneLabel: 'Завершить',
+      nextLabel: t('tour_next_label'),
+      prevLabel: t('tour_prev_label'),
+      doneLabel: t('tour_done_label'),
       tooltipClass: 'custom-introjs-tooltip',
       highlightClass: 'custom-introjs-highlight',
       dontShowAgain: true,
-      dontShowAgainLabel: 'Больше не показывать',
+      dontShowAgainLabel: t('tour_dont_show_again'),
       scrollToElement: true,
     });
     
@@ -509,7 +511,7 @@ const OnboardingManager: React.FC<OnboardingManagerProps> = ({ tourKey, startTou
           tourInstanceRef.current.exit();
       }
     };
-  }, [startTourTrigger, tourKey]);
+  }, [startTourTrigger, tourKey, t]);
 
   return null;
 };

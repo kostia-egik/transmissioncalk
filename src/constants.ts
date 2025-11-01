@@ -37,44 +37,44 @@ export const WORM_DIAMETER_COEFFICIENTS: number[] = [8, 10, 12.5, 16, 20, 25];
 export interface EfficiencyData {
   typical: number;
   range: string;
-  description: string;
+  descriptionKey: string;
 }
 
 export const EFFICIENCY_DATABASE: Record<GearType, EfficiencyData> = {
   [GearType.Gear]: {
     typical: 0.98,
     range: '0.96 – 0.99',
-    description: 'Для закрытых, хорошо смазываемых цилиндрических передач с качественными подшипниками.',
+    descriptionKey: 'efficiency_desc_gear',
   },
   [GearType.Chain]: {
     typical: 0.95,
     range: '0.92 – 0.97',
-    description: 'Зависит от качества смазки, натяжения и износа цепи.',
+    descriptionKey: 'efficiency_desc_chain',
   },
   [GearType.Planetary]: {
     typical: 0.98,
     range: '0.97 – 0.99',
-    description: 'Высокий КПД за счет распределения нагрузки между сателлитами.',
+    descriptionKey: 'efficiency_desc_planetary',
   },
   [GearType.ToothedBelt]: {
     typical: 0.96,
     range: '0.94 – 0.98',
-    description: 'КПД практически не зависит от нагрузки, но чувствителен к натяжению ремня.',
+    descriptionKey: 'efficiency_desc_toothed_belt',
   },
   [GearType.Belt]: {
     typical: 0.95,
     range: '0.94 – 0.96',
-    description: 'Для клиноременных передач. КПД может снижаться из-за проскальзывания.',
+    descriptionKey: 'efficiency_desc_belt',
   },
   [GearType.Bevel]: {
     typical: 0.97,
     range: '0.95 – 0.98',
-    description: 'Для конических передач с прямым зубом. Передачи с круговым зубом могут иметь более высокий КПД.',
+    descriptionKey: 'efficiency_desc_bevel',
   },
   [GearType.Worm]: {
     typical: 0.70,
     range: '0.50 – 0.90',
-    description: 'Сильно зависит от угла подъема винтовой линии (γ) и коэффициента трения. Низкие передаточные числа (u) и высокий угол подъема (γ) дают больший КПД.',
+    descriptionKey: 'efficiency_desc_worm',
   },
 };
 

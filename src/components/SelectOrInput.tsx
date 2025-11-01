@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Input from './Input';
 import Select from './Select';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SelectOrInputProps {
   label: React.ReactNode;
@@ -34,6 +35,7 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
   isSuccess,
 }) => {
   const customInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLanguage();
 
   const [showCustomInput, setShowCustomInput] = useState(() => 
     value !== '' && !options.includes(Number(value))
@@ -65,7 +67,7 @@ export const SelectOrInput: React.FC<SelectOrInputProps> = ({
 
   const selectOptions = [
     ...options.map(opt => ({ value: String(opt), label: String(opt) })),
-    { value: CUSTOM_VALUE, label: 'свое значение' }
+    { value: CUSTOM_VALUE, label: t('module_select_custom_value') }
   ];
   
   const selectValue = showCustomInput ? CUSTOM_VALUE : String(value);

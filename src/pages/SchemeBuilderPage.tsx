@@ -9,6 +9,7 @@ import { ProjectActionsModal } from '../components/ProjectActionsModal';
 import { SchemeBuilderHeader } from '../components/scheme-builder/SchemeBuilderHeader';
 import { useSchemeLayout } from '../hooks/useSchemeLayout';
 import { useSchemeInteraction } from '../hooks/useSchemeInteraction';
+import { useLanguage } from '../contexts/LanguageContext';
 
 
 interface SchemeBuilderPageProps {
@@ -24,23 +25,25 @@ interface SchemeBuilderPageProps {
     onLoadProjectFromFileClick: () => void;
     onOpenInfoModal: () => void;
     // New props for local project management
-    onSaveProjectLocal: (idToUpdate?: string, newName?: string) => Promise<void>;
-    onLoadProjectLocal: (id: string) => Promise<void>;
+    onSaveProjectLocal: (project: Project) => Promise<string | undefined>;
+    onLoadProjectLocal: (project: Project) => Promise<void>;
     onDeleteProjectLocal: (id: string) => Promise<void>;
     onNewProject: () => void;
     currentProject: Project | null;
-    localProjects: Project[];
     isDirty: boolean;
     confirmAction: (title: string, message: React.ReactNode, onConfirm: () => void, storageKey?: string) => void;
+    isViewingShared: boolean;
+    showNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
 }
 
 
 export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPageProps>(({ 
     engineParams, initialSchemeElements, schemeElements, calculationData, setSchemeElements, onBack, 
     onNavigateToModule, onModuleSelect, onSaveProjectToFile, onLoadProjectFromFileClick, onOpenInfoModal,
-    onSaveProjectLocal, onLoadProjectLocal, onDeleteProjectLocal, onNewProject, currentProject, localProjects, isDirty,
-    confirmAction
+    onSaveProjectLocal, onLoadProjectLocal, onDeleteProjectLocal, onNewProject, currentProject, isDirty,
+    confirmAction, isViewingShared, showNotification
 }, ref) => {
+    const { t } = useLanguage();
     const [isProjectActionsModalOpen, setIsProjectActionsModalOpen] = useState(false);
     const [contentDimensions, setContentDimensions] = useState({ width: 800, height: 600 });
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 1024);
@@ -133,13 +136,13 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
             const previousOverlapsKey = JSON.stringify(Array.from(overlappingUgoIds).sort());
             if (currentOverlapsKey !== previousOverlapsKey) {
                 setOverlappingUgoIds(detectedOverlaps);
-                setOverlapWarningMessage("Произошло наложение схемы, используйте валы-проставки для обхода проблемного участка");
+                setOverlapWarningMessage(t('scheme_overlap_warning'));
             }
         } else if (detectedOverlaps.size === 0 && overlappingUgoIds.size > 0) {
             setOverlappingUgoIds(new Set());
             setOverlapWarningMessage(null);
         }
-    }, [detectedOverlaps, warningDismissed, overlappingUgoIds, setOverlappingUgoIds, setOverlapWarningMessage]);
+    }, [detectedOverlaps, warningDismissed, overlappingUgoIds, setOverlappingUgoIds, setOverlapWarningMessage, t]);
 
 
     useEffect(() => {
@@ -286,7 +289,6 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                 onDeleteLocal={onDeleteProjectLocal}
                 onNewProject={onNewProject}
                 currentProject={currentProject}
-                localProjects={localProjects}
                 isDirty={isDirty}
                 context="scheme"
                 svgContainerRef={ref as React.RefObject<HTMLDivElement>}
@@ -294,6 +296,8 @@ export const SchemeBuilderPage = forwardRef<HTMLDivElement, SchemeBuilderPagePro
                 calculationData={calculationData}
                 engineParams={engineParams}
                 confirmAction={confirmAction}
+                isViewingShared={isViewingShared}
+                showNotification={showNotification}
             />
             <SchemeBuilderHeader
                 onBack={onBack}

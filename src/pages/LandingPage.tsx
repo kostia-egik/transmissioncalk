@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Select from '../components/Select';
@@ -7,37 +7,53 @@ import { TelegramIcon } from '../assets/icons/TelegramIcon';
 import { VkIcon } from '../assets/icons/VkIcon';
 import { YoutubeIcon } from '../assets/icons/YoutubeIcon';
 import { BoostyIcon } from '../assets/icons/BoostyIcon';
+import { AuthWidget } from '../components/AuthWidget';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { ChangelogModal, ChangelogItem } from '../components/ChangelogModal';
+
+// Импорт медиафайлов из папки assets
+import screenshot1 from '../assets/1.webp';
+import screenshot2 from '../assets/2.webp';
+import screenshot3 from '../assets/3.webp';
+import demoVideo from '../assets/demo-video.mp4';
+
 
 interface LandingPageProps {
   onNavigateToWorkbench: () => void;
 }
 
-// Данные для раздела "Что нового?"
-const changelogData = [
-    {
-    version: 'v1.1',
-    date: '20.10.2025',
-    changes: [
-      'Добавлена приветственная странница.',
-      'Переработаны сохранения.'
-    ]
-  },
-  {
-      version: 'v1.0',
-      date: '20.09.2025',
-      changes: [
-          'Первый публичный релиз приложения.',
-      ]
-  }
-];
-
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
+  const { t } = useLanguage();
   const [feedback, setFeedback] = useState({
     type: 'Идея',
     message: '',
     email: ''
   });
   const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [lightboxState, setLightboxState] = useState({ isOpen: false, imageIndex: 0 });
+  const screenshots = [screenshot1, screenshot2, screenshot3];
+  const [isChangelogModalOpen, setIsChangelogModalOpen] = useState(false);
+
+  // --- Динамическая загрузка данных для Changelog ---
+  const changelogVersions = t('changelog_versions').split(',');
+  const allChangelogItems: ChangelogItem[] = changelogVersions.map(version => {
+      const versionKey = version.replace(/\./g, '_');
+      const changes: string[] = [];
+      let i = 1;
+      while (true) {
+          const change = t(`changelog_${versionKey}_changes_${i}` as any, undefined);
+          if (change === `changelog_${versionKey}_changes_${i}`) break; // Key not found
+          changes.push(change);
+          i++;
+      }
+      return {
+          version: t(`changelog_${versionKey}_version` as any),
+          date: t(`changelog_${versionKey}_date` as any),
+          changes: changes,
+      };
+  });
+
 
   // Сбрасываем статус формы через 4 секунды после ответа
   useEffect(() => {
@@ -84,16 +100,51 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
     }
   };
 
+  // --- Функции для управления лайтбоксом ---
+  const openLightbox = (index: number) => {
+    setLightboxState({ isOpen: true, imageIndex: index });
+  };
+
+  const closeLightbox = useCallback(() => {
+    setLightboxState({ isOpen: false, imageIndex: 0 });
+  }, []);
+
+  const goToNext = useCallback(() => {
+    setLightboxState(prevState => ({
+      ...prevState,
+      imageIndex: (prevState.imageIndex + 1) % screenshots.length,
+    }));
+  }, [screenshots.length]);
+
+  const goToPrev = useCallback(() => {
+    setLightboxState(prevState => ({
+      ...prevState,
+      imageIndex: (prevState.imageIndex - 1 + screenshots.length) % screenshots.length,
+    }));
+  }, [screenshots.length]);
+
+  useEffect(() => {
+    if (!lightboxState.isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') goToNext();
+      if (e.key === 'ArrowLeft') goToPrev();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxState.isOpen, closeLightbox, goToNext, goToPrev]);
+
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-slate-100" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'10\' height=\'10\' viewBox=\'0 0 10\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2\' stroke=\'%23cbd5e1\' stroke-opacity=\'0.6\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }}>
       <header className="w-full p-4 bg-white/80 backdrop-blur-sm sticky top-0 z-30 border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-slate-800">Калькуляторы трансмиссий</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t('header_title')}</h1>
           <div className="flex items-center space-x-4">
-            {/* Placeholder for future controls */}
-            <div className="text-sm text-gray-400">[Язык]</div>
-            <div className="text-sm text-gray-400">[Вход]</div>
+            <LanguageSwitcher />
+            <AuthWidget />
           </div>
         </div>
       </header>
@@ -103,11 +154,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
           <nav className="flex space-x-1 pt-2" aria-label="Tabs">
             {/* Active Tab */}
             <span className="bg-slate-100 border border-slate-300 border-b-transparent rounded-t-lg px-6 py-3 font-semibold text-slate-800 text-sm -mb-px">
-              Расчет передаточных чисел
+              {t('tab_gear_ratios')}
             </span>
             {/* Inactive/Disabled Tab */}
             <span className="bg-slate-300 border-transparent text-gray-500 rounded-t-lg px-6 py-3 font-medium text-sm cursor-not-allowed hover:bg-slate-300/40 hover:text-slate-700 transition-colors">
-              [В разработке...]
+              {t('tab_in_development')}
             </span>
           </nav>
         </div>
@@ -117,10 +168,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
         {/* Hero Section */}
         <section className="text-center bg-white p-8 rounded-xl shadow-lg mb-10">
           <p className="max-w-4xl mx-auto text-xl text-slate-800 mb-8">
-            Проектируйте многоступенчатые трансмиссии любой сложности. Собирайте каскад передач, задавайте параметры и мгновенно получайте все расчеты. Автоматическая генерация кинематической схемы поможет вам визуализировать и скомпоновать трансмиссию.
+            {t('hero_description')}
           </p>
           <Button onClick={onNavigateToWorkbench} variant="primary" className="!px-10 !py-4 text-lg animate-pulse-shadow">
-            Перейти к калькулятору
+            {t('hero_button')}
           </Button>
         </section>
 
@@ -129,30 +180,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-10">
             <div className="bg-white p-6 rounded-xl shadow-lg">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                {/* Screenshot placeholders */}
-                <div className="aspect-video bg-slate-200 rounded-lg flex items-center justify-center text-slate-500 text-sm font-semibold">[Скриншот 1]</div>
-                <div className="aspect-video bg-slate-200 rounded-lg flex items-center justify-center text-slate-500 text-sm font-semibold">[Скриншот 2]</div>
-                <div className="aspect-video bg-slate-200 rounded-lg flex items-center justify-center text-slate-500 text-sm font-semibold">[Скриншот 3]</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {screenshots.map((src, index) => (
+                    <div key={index} className="relative aspect-video bg-slate-200 rounded-lg group cursor-pointer overflow-hidden" onClick={() => openLightbox(index)}>
+                        <img loading="lazy" decoding="async" src={src} alt={`${t('screenshots_title')} ${index + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-colors flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                        </div>
+                    </div>
+                ))}
               </div>
-              <div className="aspect-video bg-slate-200 rounded-lg flex items-center justify-center text-slate-500 mb-6 font-semibold">[Короткая GIF/видео демонстрация]</div>
+              <div className="aspect-video bg-slate-900 rounded-lg flex items-center justify-center text-slate-500 mb-6 font-semibold overflow-hidden">
+                <video src={demoVideo} controls autoPlay muted loop playsInline preload="metadata" className="w-full h-full object-cover">
+                  Ваш браузер не поддерживает тег video.
+                </video>
+              </div>
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
                 <Button variant="secondary" onClick={() => window.open('https://youtube.com', '_blank')} className="w-full sm:w-auto !flex items-center justify-center gap-2">
                   <YoutubeIcon className="w-6 h-6" />
-                  Смотреть на YouTube
+                  {t('watch_on_youtube')}
                 </Button>
                 <Button variant="secondary" onClick={() => window.open('https://vk.com/video', '_blank')} className="w-full sm:w-auto !flex items-center justify-center gap-2">
                   <VkIcon className="w-6 h-6" />
-                  Смотреть на VK Видео
+                  {t('watch_on_vk')}
                 </Button>
               </div>
             </div>
             
             {/* Changelog */}
             <div className="bg-white p-6 rounded-xl shadow-lg">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">Что нового?</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4">{t('changelog_title')}</h3>
               <div className="space-y-4">
-                {changelogData.slice(0, 2).map((item) => (
+                {allChangelogItems.slice(0, 2).map((item) => (
                   <div key={item.version}>
                     <h4 className="font-semibold text-slate-800 mb-1">
                       <span className="bg-blue-100 text-blue-800 text-xs font-semibold me-2 px-2.5 py-0.5 rounded-full">{item.version}</span>
@@ -166,7 +225,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
                   </div>
                 ))}
               </div>
-              <a href="https://github.com/kostia-egik/transmissioncalk/releases" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline mt-4 inline-block">Вся история изменений →</a>
+              <button onClick={() => setIsChangelogModalOpen(true)} className="text-sm text-blue-600 hover:underline mt-4 inline-block">{t('changelog_all_changes')}</button>
             </div>
           </div>
 
@@ -174,7 +233,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
           <div className="space-y-10">
             {/* Feedback Box */}
             <div className="bg-white p-6 rounded-xl shadow-lg">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">Есть идея или отзыв?</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4">{t('feedback_title')}</h3>
               <form onSubmit={handleSubmit}>
                 <Select
                   id="feedback-type"
@@ -182,45 +241,44 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
                   value={feedback.type}
                   onChange={handleFeedbackChange}
                   options={[
-                    { value: 'Идея', label: 'Идея по улучшению' },
-                    { value: 'Ошибка', label: 'Сообщение об ошибке' },
-                    { value: 'Другое', label: 'Другое' },
+                    { value: 'Идея', label: t('feedback_type_idea') },
+                    { value: 'Ошибка', label: t('feedback_type_bug') },
+                    { value: 'Другое', label: t('feedback_type_other') },
                   ]}
-                  label="Тип отзыва"
+                  label={t('feedback_type_label')}
                   className="!mb-2"
                 />
-                <label htmlFor="feedback-message" className="block text-sm font-medium text-gray-700 mb-1">Ваше сообщение<span className="text-red-500">*</span></label>
+                <label htmlFor="feedback-message" className="block text-sm font-medium text-gray-700 mb-1">{t('feedback_message_label')}<span className="text-red-500">*</span></label>
                 <textarea 
                   id="feedback-message"
                   name="message"
                   value={feedback.message}
                   onChange={handleFeedbackChange}
                   className="w-full h-24 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" 
-                  placeholder="Опишите подробно..."
+                  placeholder={t('feedback_message_placeholder')}
                   required
                 />
                 <Input
                     id="feedback-email"
                     name="email"
                     type="email"
-                    label="Ваш Email (необязательно)"
-                    placeholder="Для обратной связи"
+                    label={t('feedback_email_label')}
+                    placeholder={t('feedback_email_placeholder')}
                     value={feedback.email}
                     onChange={handleFeedbackChange}
                     className="!mb-2 mt-2"
                 />
                 <div className="mt-2 h-10 flex items-center">
-                    {/* FIX: Refactor button rendering to a single component to resolve type error and improve logic. */}
                     {(formStatus === 'idle' || formStatus === 'submitting') && (
                         <Button type="submit" variant="primary" className="!w-full text-sm" disabled={formStatus === 'submitting' || feedback.message.trim() === ''}>
-                            {formStatus === 'submitting' ? 'Отправка...' : 'Отправить'}
+                            {formStatus === 'submitting' ? t('feedback_submitting_button') : t('feedback_submit_button')}
                         </Button>
                     )}
                     {formStatus === 'success' && (
-                        <p className="w-full text-center text-sm font-semibold text-green-600 bg-green-100 p-2 rounded-md animate-fade-in">Спасибо! Отзыв отправлен.</p>
+                        <p className="w-full text-center text-sm font-semibold text-green-600 bg-green-100 p-2 rounded-md animate-fade-in">{t('feedback_success_message')}</p>
                     )}
                     {formStatus === 'error' && (
-                        <p className="w-full text-center text-sm font-semibold text-red-600 bg-red-100 p-2 rounded-md animate-fade-in">Ошибка. Попробуйте снова.</p>
+                        <p className="w-full text-center text-sm font-semibold text-red-600 bg-red-100 p-2 rounded-md animate-fade-in">{t('feedback_error_message')}</p>
                     )}
                 </div>
               </form>
@@ -228,7 +286,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
 
             {/* Social & Support */}
             <div className="bg-white p-6 rounded-xl shadow-lg">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">Следите и поддерживайте</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4">{t('social_title')}</h3>
               <div className="flex justify-center space-x-6 mb-6">
                 <a href="https://t.me/erinaceuscraft" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-500 transition-colors" title="Telegram">
                     <TelegramIcon className="w-8 h-8" />
@@ -239,9 +297,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
                 <a href="https://vk.com/club227195296" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-600 transition-colors" title="VK">
                     <VkIcon className="w-8 h-8" />
                 </a>
+				<a href="https://www.youtube.com/@erinaceuscraft" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-600 transition-colors" title="Youtube">
+                    <YoutubeIcon className="w-8 h-8" />
+                </a>
               </div>
               <Button onClick={() => window.open('https://boosty.to/erinaceuscraft/donate', '_blank')} className="!w-full !bg-slate-300 hover:!bg-slate-400 !flex items-center justify-center gap-2 !py-2.5">
-                <span className="font-semibold text-slate-800">Поддержать на</span>
+                <span className="font-semibold text-slate-800">{t('social_support_button')}</span>
                 <BoostyIcon className="h-5 w-auto" />
               </Button>
             </div>
@@ -249,8 +310,58 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkbench }) => {
         </div>
       </main>
 
+      {isChangelogModalOpen && (
+          <ChangelogModal
+              isOpen={isChangelogModalOpen}
+              onClose={() => setIsChangelogModalOpen(false)}
+              changelogItems={allChangelogItems}
+          />
+      )}
+
+      {lightboxState.isOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm animate-fade-in-fast" 
+          onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button 
+            onClick={closeLightbox} 
+            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition-colors"
+            aria-label={t('common_close_esc')}
+          >
+            &times;
+          </button>
+          
+          <button 
+            onClick={(e) => { e.stopPropagation(); goToPrev(); }} 
+            className="absolute left-4 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-colors"
+            aria-label={t('common_previous_element')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+
+          <img 
+            loading="lazy"
+            decoding="async"
+            src={screenshots[lightboxState.imageIndex]} 
+            alt={`${t('screenshots_title')} ${lightboxState.imageIndex + 1}`} 
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          <button 
+            onClick={(e) => { e.stopPropagation(); goToNext(); }} 
+            className="absolute right-4 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-colors"
+            aria-label={t('common_next_element')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+      )}
+
       <footer className="w-full px-4 sm:px-6 lg:px-8 mt-8 py-6 text-center text-gray-500 text-sm border-t border-slate-300 bg-slate-100">
-          <p>&copy; {new Date().getFullYear()} Мастер Трансмиссий. Все права защищены.</p>
+          <p>&copy; {new Date().getFullYear()} {t('footer_copyright')}</p>
       </footer>
     </div>
   );
