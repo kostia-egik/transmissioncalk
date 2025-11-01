@@ -12,6 +12,16 @@ export default defineConfig({
     // Предотвращаем встраивание мелких файлов в виде data: URL.
     // Это гарантирует, что Service Worker всегда будет отдельным файлом.
     assetsInlineLimit: 0,
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'service-worker.js') {
+            return 'service-worker.js';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
   },
   test: {
     globals: true,
