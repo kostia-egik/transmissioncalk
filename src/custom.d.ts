@@ -1,24 +1,8 @@
 // This file contains type definitions for assets that TypeScript doesn't know about by default.
 
-// FIX: Renaming the exported variable from `content` to `src` to align with Vite's default asset types.
-// This is intended to resolve the "Duplicate identifier 'src'" error, which likely stems from a conflict
-// with Vite's own client type declarations that use `src` as the identifier.
-declare module '*.webp' {
-  const src: string;
-  export default src;
-}
-
-declare module '*.mp4' {
-  const src: string;
-  export default src;
-}
-
-// Объявляем TypeScript, что импорт с суффиксом `?url` является модулем,
-// который экспортирует строку (URL). Это исправляет ошибку TS2307.
-declare module '*?url' {
-    const src: string;
-    export default src;
-}
+// FIX: Removed duplicate module declarations for asset types (*.webp, *.mp4, *?url).
+// These were conflicting with Vite's built-in client types which already provide these definitions.
+// Removing them resolves the "Duplicate identifier 'src'" error.
 
 // FIX: Moved Vite environment variable types here from firebase.ts to properly augment the global scope.
 // This resolves the "Subsequent property declarations must have the same type" error in firebase.ts and
